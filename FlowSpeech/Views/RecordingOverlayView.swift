@@ -176,48 +176,55 @@ struct CircularWaveformView: View {
     let levels: [Float]
     @State private var phase: Double = 0
     
+    private let gradient = Gradient(colors: [Color(hex: "2563EB"), Color(hex: "0D9488")])
+    private let strokeStyle = StrokeStyle(lineWidth: 2, lineCap: .round)
+    
     var body: some View {
         Canvas { context, size in
-            let center = CGPoint(x: size.width / 2, y: size.height / 2)
-            let radius = min(size.width, size.height) / 2 - 4
-            
-            for i in 0..<levels.count {
-                let angle = (Double(i) / Double(levels.count)) * 2 * .pi - .pi / 2 + phase
-                let level = CGFloat(levels[i])
-                let barLength = radius * 0.3 * level + 4
-                
-                let startRadius = radius - barLength / 2
-                let endRadius = radius + barLength / 2
-                
-                let start = CGPoint(
-                    x: center.x + startRadius * cos(angle),
-                    y: center.y + startRadius * sin(angle)
-                )
-                let end = CGPoint(
-                    x: center.x + endRadius * cos(angle),
-                    y: center.y + endRadius * sin(angle)
-                )
-                
-                var path = Path()
-                path.move(to: start)
-                path.addLine(to: end)
-                
-                context.stroke(
-                    path,
-                    with: .linearGradient(
-                        Gradient(colors: [Color(hex: "2563EB"), Color(hex: "0D9488")]),
-                        startPoint: start,
-                        endPoint: end
-                    ),
-                    style: StrokeStyle(lineWidth: 2, lineCap: .round)
-                )
-            }
+            drawWaveform(context: context, size: size)
         }
         .onAppear {
             withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
                 phase = 2 * .pi
             }
         }
+    }
+    
+    private func drawWaveform(context: GraphicsContext, size: CGSize) {
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        let radius = min(size.width, size.height) / 2 - 4
+        
+        for i in 0..<levels.count {
+            drawBar(context: context, index: i, center: center, radius: radius)
+        }
+    }
+    
+    private func drawBar(context: GraphicsContext, index: Int, center: CGPoint, radius: CGFloat) {
+        let angle = (Double(index) / Double(levels.count)) * 2 * .pi - .pi / 2 + phase
+        let level = CGFloat(levels[index])
+        let barLength = radius * 0.3 * level + 4
+        
+        let startRadius = radius - barLength / 2
+        let endRadius = radius + barLength / 2
+        
+        let start = CGPoint(
+            x: center.x + startRadius * cos(angle),
+            y: center.y + startRadius * sin(angle)
+        )
+        let end = CGPoint(
+            x: center.x + endRadius * cos(angle),
+            y: center.y + endRadius * sin(angle)
+        )
+        
+        var path = Path()
+        path.move(to: start)
+        path.addLine(to: end)
+        
+        context.stroke(
+            path,
+            with: .linearGradient(gradient, startPoint: start, endPoint: end),
+            style: strokeStyle
+        )
     }
 }
 
