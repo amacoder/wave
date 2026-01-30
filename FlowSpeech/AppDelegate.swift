@@ -221,17 +221,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 appState.isTranscribing = false
                 hideRecordingOverlay()
                 
-                // Insert text at cursor
+                // Insert text at cursor (with small delay to let modifier keys settle)
                 if appState.autoInsertText {
-                    print("Inserting text at cursor...")
-                    textInserter.insertText(transcription)
-                    print("Text insertion completed")
+                    print("Inserting text at cursor (after delay)...")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
+                        textInserter.insertText(transcription)
+                        print("Text insertion completed")
+                        // Play success sound
+                        NSSound(named: "Glass")?.play()
+                    }
                 } else {
                     print("autoInsertText is OFF, skipping insertion")
+                    NSSound(named: "Glass")?.play()
                 }
-                
-                // Play success sound
-                NSSound(named: "Glass")?.play()
             }
             
             // Clean up audio file

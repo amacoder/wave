@@ -13,17 +13,31 @@ class TextInserter {
     
     // MARK: - Text Insertion
     
-    /// Inserts text at the current cursor position using clipboard paste (Cmd+V)
-    /// This method works in virtually all apps including Electron apps (Notion, Slack, etc.)
+    /// Inserts text at the current cursor position
+    /// Tries Accessibility API first, falls back to clipboard paste for Electron apps
     func insertText(_ text: String) {
-        print("TextInserter: inserting '\(text)' via clipboard")
+        print("TextInserter: inserting '\(text)'")
         
-        // Get the frontmost app before we do anything
+        // Get the frontmost app
         let frontApp = NSWorkspace.shared.frontmostApplication
-        print("TextInserter: frontmost app is \(frontApp?.localizedName ?? "unknown")")
+        let appName = frontApp?.localizedName ?? "unknown"
+        print("TextInserter: frontmost app is \(appName)")
         
-        insertTextViaClipboard(text)
-        print("TextInserter: clipboard method completed")
+        // List of apps known to need clipboard method (Electron apps, etc.)
+        let clipboardOnlyApps = ["Notion", "Slack", "Discord", "Visual Studio Code", "Cursor", "Microsoft Teams"]
+        
+        if clipboardOnlyApps.contains(appName) {
+            print("TextInserter: using clipboard method for \(appName)")
+            insertTextViaClipboard(text)
+        } else {
+            // Try Accessibility first
+            if insertTextViaAccessibility(text) {
+                print("TextInserter: accessibility insertion succeeded")
+            } else {
+                print("TextInserter: accessibility failed, using clipboard")
+                insertTextViaClipboard(text)
+            }
+        }
     }
     
     // MARK: - Accessibility API Method
