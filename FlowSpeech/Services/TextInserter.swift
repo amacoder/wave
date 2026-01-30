@@ -13,41 +13,42 @@ class TextInserter {
     
     // MARK: - Text Insertion
     
-    /// Inserts text at the current cursor position by typing it character by character
+    /// Inserts text at the current cursor position via clipboard + paste
     func insertText(_ text: String) {
-        print("TextInserter: typing '\(text)' character by character")
+        print("TextInserter: inserting via clipboard paste")
         
-        // Get the frontmost app
-        let frontApp = NSWorkspace.shared.frontmostApplication
-        let appName = frontApp?.localizedName ?? "unknown"
-        print("TextInserter: frontmost app is \(appName)")
+        // Save current clipboard
+        let pasteboard = NSPasteboard.general
+        let oldContent = pasteboard.string(forType: .string)
         
-        // Type each character - works universally
-        typeText(text)
-        print("TextInserter: typing completed")
-    }
-    
-    /// Types text character by character using CGEvents - works in all apps
-    private func typeText(_ text: String) {
-        let source = CGEventSource(stateID: .combinedSessionState)
+        // Set text to clipboard
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
         
-        for char in text {
-            var unicodeChars = Array(String(char).utf16)
-            
-            // Create key down event
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true) {
-                keyDown.keyboardSetUnicodeString(stringLength: unicodeChars.count, unicodeString: &unicodeChars)
-                keyDown.post(tap: .cgSessionEventTap)
+        // Paste via AppleScript (requires Automation permission for System Events)
+        let script = """
+        tell application "System Events"
+            keystroke "v" using command down
+        end tell
+        """
+        
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: script) {
+            appleScript.executeAndReturnError(&error)
+            if let error = error {
+                print("TextInserter: AppleScript error - \(error[NSAppleScript.errorBriefMessage] ?? "unknown")")
+                print("TextInserter: Grant Automation permission: System Settings → Privacy & Security → Automation → FlowSpeech → System Events")
+            } else {
+                print("TextInserter: paste successful")
             }
-            
-            // Create key up event
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
-                keyUp.keyboardSetUnicodeString(stringLength: unicodeChars.count, unicodeString: &unicodeChars)
-                keyUp.post(tap: .cgSessionEventTap)
+        }
+        
+        // Restore old clipboard after delay
+        if let old = oldContent {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                pasteboard.clearContents()
+                pasteboard.setString(old, forType: .string)
             }
-            
-            // Small delay between characters
-            usleep(5000) // 5ms
         }
     }
     
