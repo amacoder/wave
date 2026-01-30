@@ -16,13 +16,18 @@ class TextInserter {
     /// Inserts text at the current cursor position
     /// Falls back to clipboard paste if direct insertion fails
     func insertText(_ text: String) {
+        print("TextInserter: attempting to insert '\(text)'")
+        
         // Try direct insertion via Accessibility API first
         if insertTextViaAccessibility(text) {
+            print("TextInserter: accessibility insertion succeeded")
             return
         }
         
+        print("TextInserter: accessibility failed, trying clipboard method")
         // Fall back to clipboard method
         insertTextViaClipboard(text)
+        print("TextInserter: clipboard method completed")
     }
     
     // MARK: - Accessibility API Method

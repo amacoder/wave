@@ -242,6 +242,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("Transcription successful: \(transcription)")
             
             await MainActor.run {
+                print("MainActor block running, autoInsertText: \(appState.autoInsertText)")
                 appState.lastTranscription = transcription
                 appState.isTranscribing = false
                 hideRecordingOverlay()
@@ -250,6 +251,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if appState.autoInsertText {
                     print("Inserting text at cursor...")
                     textInserter.insertText(transcription)
+                    print("Text insertion completed")
+                } else {
+                    print("autoInsertText is OFF, skipping insertion")
                 }
                 
                 // Play success sound
