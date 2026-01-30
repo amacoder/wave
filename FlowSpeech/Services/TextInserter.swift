@@ -17,6 +17,11 @@ class TextInserter {
     /// This method works in virtually all apps including Electron apps (Notion, Slack, etc.)
     func insertText(_ text: String) {
         print("TextInserter: inserting '\(text)' via clipboard")
+        
+        // Get the frontmost app before we do anything
+        let frontApp = NSWorkspace.shared.frontmostApplication
+        print("TextInserter: frontmost app is \(frontApp?.localizedName ?? "unknown")")
+        
         insertTextViaClipboard(text)
         print("TextInserter: clipboard method completed")
     }
@@ -100,7 +105,7 @@ class TextInserter {
         return false
     }
     
-    // MARK: - Clipboard Method (Fallback)
+    // MARK: - Clipboard Method
     
     private func insertTextViaClipboard(_ text: String) {
         // Save current clipboard content
@@ -111,13 +116,10 @@ class TextInserter {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         
-        print("TextInserter: clipboard set, waiting before paste...")
+        print("TextInserter: clipboard set, pasting via AppleScript...")
         
-        // Small delay to ensure clipboard is ready
-        usleep(50000) // 50ms
-        
-        // Simulate Cmd+V
-        simulatePaste()
+        // Use AppleScript for most reliable paste
+        pasteViaAppleScript()
         
         // Restore old clipboard content after a delay
         if let old = oldContent {
@@ -128,29 +130,22 @@ class TextInserter {
         }
     }
     
-    private func simulatePaste() {
-        print("TextInserter: simulating Cmd+V...")
+    private func pasteViaAppleScript() {
+        let script = """
+        tell application "System Events"
+            keystroke "v" using command down
+        end tell
+        """
         
-        let source = CGEventSource(stateID: .combinedSessionState)
-        
-        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false) else {
-            print("TextInserter: ERROR - failed to create CGEvents")
-            return
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: script) {
+            appleScript.executeAndReturnError(&error)
+            if let error = error {
+                print("TextInserter: AppleScript error: \(error)")
+            } else {
+                print("TextInserter: AppleScript paste completed")
+            }
         }
-        
-        // Key down: Cmd + V
-        keyDown.flags = .maskCommand
-        keyDown.post(tap: .cgSessionEventTap)
-        
-        // Small delay between down and up
-        usleep(10000) // 10ms
-        
-        // Key up: Cmd + V
-        keyUp.flags = .maskCommand
-        keyUp.post(tap: .cgSessionEventTap)
-        
-        print("TextInserter: Cmd+V simulated")
     }
     
     // MARK: - Typing Simulation (Alternative)

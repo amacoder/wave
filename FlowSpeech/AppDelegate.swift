@@ -267,8 +267,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             recordingWindow?.backgroundColor = .clear
             recordingWindow?.isOpaque = false
             recordingWindow?.level = .floating
-            recordingWindow?.collectionBehavior = [.canJoinAllSpaces, .stationary]
+            recordingWindow?.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
             recordingWindow?.hasShadow = true
+            recordingWindow?.ignoresMouseEvents = true // Don't steal focus
         }
         
         // Position near the mouse cursor or center of screen
