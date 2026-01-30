@@ -13,30 +13,41 @@ class TextInserter {
     
     // MARK: - Text Insertion
     
-    /// Inserts text at the current cursor position
-    /// Tries Accessibility API first, falls back to clipboard paste for Electron apps
+    /// Inserts text at the current cursor position by typing it character by character
     func insertText(_ text: String) {
-        print("TextInserter: inserting '\(text)'")
+        print("TextInserter: typing '\(text)' character by character")
         
         // Get the frontmost app
         let frontApp = NSWorkspace.shared.frontmostApplication
         let appName = frontApp?.localizedName ?? "unknown"
         print("TextInserter: frontmost app is \(appName)")
         
-        // List of apps known to need clipboard method (Electron apps, etc.)
-        let clipboardOnlyApps = ["Notion", "Slack", "Discord", "Visual Studio Code", "Cursor", "Microsoft Teams"]
+        // Type each character - works universally
+        typeText(text)
+        print("TextInserter: typing completed")
+    }
+    
+    /// Types text character by character using CGEvents - works in all apps
+    private func typeText(_ text: String) {
+        let source = CGEventSource(stateID: .combinedSessionState)
         
-        if clipboardOnlyApps.contains(appName) {
-            print("TextInserter: using clipboard method for \(appName)")
-            insertTextViaClipboard(text)
-        } else {
-            // Try Accessibility first
-            if insertTextViaAccessibility(text) {
-                print("TextInserter: accessibility insertion succeeded")
-            } else {
-                print("TextInserter: accessibility failed, using clipboard")
-                insertTextViaClipboard(text)
+        for char in text {
+            var unicodeChars = Array(String(char).utf16)
+            
+            // Create key down event
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true) {
+                keyDown.keyboardSetUnicodeString(stringLength: unicodeChars.count, unicodeString: &unicodeChars)
+                keyDown.post(tap: .cgSessionEventTap)
             }
+            
+            // Create key up event
+            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
+                keyUp.keyboardSetUnicodeString(stringLength: unicodeChars.count, unicodeString: &unicodeChars)
+                keyUp.post(tap: .cgSessionEventTap)
+            }
+            
+            // Small delay between characters
+            usleep(5000) // 5ms
         }
     }
     
