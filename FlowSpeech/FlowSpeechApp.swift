@@ -29,7 +29,7 @@ class AppState: ObservableObject {
     @Published var audioLevels: [Float] = Array(repeating: 0.0, count: 30)
     
     // Settings
-    @Published var selectedModel: WhisperModel = .gpt4oTranscribe
+    @Published var selectedModel: WhisperModel = .whisper1
     @Published var selectedHotkey: HotkeyOption = .capsLock
     @Published var launchAtLogin: Bool = false
     @Published var showInDock: Bool = false
