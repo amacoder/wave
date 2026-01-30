@@ -83,17 +83,13 @@ class AppState: ObservableObject {
 
 // MARK: - Whisper Model Options
 enum WhisperModel: String, CaseIterable, Identifiable {
-    case gpt4oTranscribe = "gpt-4o-transcribe"
-    case gpt4oMiniTranscribe = "gpt-4o-mini-transcribe"
     case whisper1 = "whisper-1"
     
     var id: String { rawValue }
     
     var displayName: String {
         switch self {
-        case .gpt4oTranscribe: return "GPT-4o Transcribe (Best Quality)"
-        case .gpt4oMiniTranscribe: return "GPT-4o Mini Transcribe (Faster)"
-        case .whisper1: return "Whisper-1 (Classic)"
+        case .whisper1: return "Whisper-1"
         }
     }
 }

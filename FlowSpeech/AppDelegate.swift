@@ -215,9 +215,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Transcription
     
     private func transcribe(audioURL: URL) async {
+        print("Starting transcription for: \(audioURL.path)")
+        
         do {
             // Get API key from Keychain
             guard let apiKey = KeychainManager.shared.getAPIKey() else {
+                print("ERROR: No API key found in keychain")
                 await MainActor.run {
                     appState.errorMessage = "No API key configured. Please add your OpenAI API key in Settings."
                     appState.isTranscribing = false
@@ -225,6 +228,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 return
             }
+            
+            print("API key found, calling Whisper API with model: \(appState.selectedModel.rawValue)")
             
             // Transcribe using Whisper API
             let transcription = try await whisperService.transcribe(
@@ -234,6 +239,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 language: appState.language == "auto" ? nil : appState.language
             )
             
+            print("Transcription successful: \(transcription)")
+            
             await MainActor.run {
                 appState.lastTranscription = transcription
                 appState.isTranscribing = false
@@ -241,6 +248,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 
                 // Insert text at cursor
                 if appState.autoInsertText {
+                    print("Inserting text at cursor...")
                     textInserter.insertText(transcription)
                 }
                 
@@ -252,6 +260,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             try? FileManager.default.removeItem(at: audioURL)
             
         } catch {
+            print("Transcription ERROR: \(error.localizedDescription)")
             await MainActor.run {
                 appState.errorMessage = "Transcription failed: \(error.localizedDescription)"
                 appState.isTranscribing = false

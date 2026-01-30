@@ -101,14 +101,19 @@ class WhisperService {
         request.httpBody = body
         
         // Make request
+        print("Sending request to OpenAI... (audio size: \(audioData.count) bytes)")
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw TranscriptionError(message: "Invalid response from server")
         }
         
+        print("Response status: \(httpResponse.statusCode)")
+        
         // Handle errors
         if httpResponse.statusCode != 200 {
+            let responseString = String(data: data, encoding: .utf8) ?? "no body"
+            print("API error response: \(responseString)")
             // Try to parse error response
             if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: data) {
                 throw TranscriptionError(message: errorResponse.error.message)
@@ -118,6 +123,7 @@ class WhisperService {
         
         // Parse response
         let transcriptionResponse = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
+        print("Transcription result: \(transcriptionResponse.text)")
         return transcriptionResponse.text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
