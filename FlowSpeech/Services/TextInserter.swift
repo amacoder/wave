@@ -13,19 +13,10 @@ class TextInserter {
     
     // MARK: - Text Insertion
     
-    /// Inserts text at the current cursor position
-    /// Falls back to clipboard paste if direct insertion fails
+    /// Inserts text at the current cursor position using clipboard paste (Cmd+V)
+    /// This method works in virtually all apps including Electron apps (Notion, Slack, etc.)
     func insertText(_ text: String) {
-        print("TextInserter: attempting to insert '\(text)'")
-        
-        // Try direct insertion via Accessibility API first
-        if insertTextViaAccessibility(text) {
-            print("TextInserter: accessibility insertion succeeded")
-            return
-        }
-        
-        print("TextInserter: accessibility failed, trying clipboard method")
-        // Fall back to clipboard method
+        print("TextInserter: inserting '\(text)' via clipboard")
         insertTextViaClipboard(text)
         print("TextInserter: clipboard method completed")
     }
