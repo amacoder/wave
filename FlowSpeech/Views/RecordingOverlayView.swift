@@ -200,20 +200,23 @@ struct CircularWaveformView: View {
     }
     
     private func drawBar(context: GraphicsContext, index: Int, center: CGPoint, radius: CGFloat) {
-        let angle = (Double(index) / Double(levels.count)) * 2 * .pi - .pi / 2 + phase
+        let angleValue: CGFloat = (CGFloat(index) / CGFloat(levels.count)) * 2 * .pi - .pi / 2 + CGFloat(phase)
         let level = CGFloat(levels[index])
         let barLength = radius * 0.3 * level + 4
         
         let startRadius = radius - barLength / 2
         let endRadius = radius + barLength / 2
         
+        let cosAngle = CoreGraphics.cos(angleValue)
+        let sinAngle = CoreGraphics.sin(angleValue)
+        
         let start = CGPoint(
-            x: center.x + startRadius * cos(angle),
-            y: center.y + startRadius * sin(angle)
+            x: center.x + startRadius * cosAngle,
+            y: center.y + startRadius * sinAngle
         )
         let end = CGPoint(
-            x: center.x + endRadius * cos(angle),
-            y: center.y + endRadius * sin(angle)
+            x: center.x + endRadius * cosAngle,
+            y: center.y + endRadius * sinAngle
         )
         
         var path = Path()
