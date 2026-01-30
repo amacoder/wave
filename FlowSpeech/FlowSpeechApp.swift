@@ -52,7 +52,10 @@ class AppState: ObservableObject {
         }
         launchAtLogin = defaults.bool(forKey: "launchAtLogin")
         showInDock = defaults.bool(forKey: "showInDock")
-        autoInsertText = defaults.bool(forKey: "autoInsertText")
+        // Only load autoInsertText if it was explicitly set, otherwise keep default (true)
+        if defaults.object(forKey: "autoInsertText") != nil {
+            autoInsertText = defaults.bool(forKey: "autoInsertText")
+        }
         if let lang = defaults.string(forKey: "language") {
             language = lang
         }
