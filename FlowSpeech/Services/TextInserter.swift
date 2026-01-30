@@ -13,9 +13,9 @@ class TextInserter {
     
     // MARK: - Text Insertion
     
-    /// Inserts text at the current cursor position via clipboard + paste
+    /// Inserts text at the current cursor position via clipboard + Cmd+V
     func insertText(_ text: String) {
-        print("TextInserter: inserting via clipboard paste")
+        print("TextInserter: inserting via clipboard + CGEvent Cmd+V")
         
         // Save current clipboard
         let pasteboard = NSPasteboard.general
@@ -25,31 +25,76 @@ class TextInserter {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         
-        // Paste via AppleScript (requires Automation permission for System Events)
-        let script = """
-        tell application "System Events"
-            keystroke "v" using command down
-        end tell
-        """
+        // Clear any held modifier keys first
+        clearModifierKeys()
         
-        var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: script) {
-            appleScript.executeAndReturnError(&error)
-            if let error = error {
-                print("TextInserter: AppleScript error - \(error[NSAppleScript.errorBriefMessage] ?? "unknown")")
-                print("TextInserter: Grant Automation permission: System Settings → Privacy & Security → Automation → FlowSpeech → System Events")
-            } else {
-                print("TextInserter: paste successful")
-            }
-        }
+        // Small delay to ensure modifiers are cleared
+        usleep(50000) // 50ms
+        
+        // Simulate Cmd+V
+        simulatePaste()
         
         // Restore old clipboard after delay
         if let old = oldContent {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 pasteboard.clearContents()
                 pasteboard.setString(old, forType: .string)
             }
         }
+    }
+    
+    private func clearModifierKeys() {
+        // Post key-up events for common modifiers to ensure they're released
+        let source = CGEventSource(stateID: .hidSystemState)
+        
+        // Release Fn key (keycode 63)
+        if let fnUp = CGEvent(keyboardEventSource: source, virtualKey: 63, keyDown: false) {
+            fnUp.post(tap: .cghidEventTap)
+        }
+        
+        // Release Option keys
+        if let optUp = CGEvent(keyboardEventSource: source, virtualKey: 58, keyDown: false) {
+            optUp.post(tap: .cghidEventTap)
+        }
+        
+        // Release Control
+        if let ctrlUp = CGEvent(keyboardEventSource: source, virtualKey: 59, keyDown: false) {
+            ctrlUp.post(tap: .cghidEventTap)
+        }
+        
+        print("TextInserter: modifier keys cleared")
+    }
+    
+    private func simulatePaste() {
+        guard let source = CGEventSource(stateID: .hidSystemState) else {
+            print("TextInserter: failed to create event source")
+            return
+        }
+        
+        // Create Cmd+V key events
+        guard let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: 55, keyDown: true),
+              let vDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true),
+              let vUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false),
+              let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 55, keyDown: false) else {
+            print("TextInserter: failed to create key events")
+            return
+        }
+        
+        // Post: Cmd down, V down, V up, Cmd up
+        cmdDown.post(tap: .cghidEventTap)
+        usleep(10000)
+        
+        vDown.flags = .maskCommand
+        vDown.post(tap: .cghidEventTap)
+        usleep(10000)
+        
+        vUp.flags = .maskCommand
+        vUp.post(tap: .cghidEventTap)
+        usleep(10000)
+        
+        cmdUp.post(tap: .cghidEventTap)
+        
+        print("TextInserter: Cmd+V posted via CGEvent")
     }
     
     // MARK: - Accessibility API Method
