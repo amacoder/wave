@@ -22,8 +22,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
-    private var capsLockPressed = false
-    private var lastCapsLockTime: Date?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
@@ -79,38 +77,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    private var optionKeyDown = false
+    private var modifierKeyDown = false
     
     private func handleFlagsChanged(_ event: NSEvent) {
         let flags = event.modifierFlags
         
+        // Check which modifier to use based on selected hotkey
+        let keyPressed: Bool
         switch appState.selectedHotkey {
+        case .fnKey:
+            keyPressed = flags.contains(.function)
         case .optionSpace, .capsLock:
-            // Use Option key for hold-to-record
-            let optionPressed = flags.contains(.option)
-            
-            if optionPressed && !optionKeyDown {
-                optionKeyDown = true
-                startRecording()
-            } else if !optionPressed && optionKeyDown {
-                optionKeyDown = false
-                stopRecordingAndTranscribe()
-            }
-            
+            keyPressed = flags.contains(.option)
         case .controlSpace:
-            // Use Control key for hold-to-record
-            let controlPressed = flags.contains(.control)
-            
-            if controlPressed && !capsLockPressed {
-                capsLockPressed = true
-                startRecording()
-            } else if !controlPressed && capsLockPressed {
-                capsLockPressed = false
-                stopRecordingAndTranscribe()
-            }
-            
-        default:
-            break
+            keyPressed = flags.contains(.control)
+        case .doubleTapCapsLock:
+            keyPressed = flags.contains(.capsLock)
+        }
+        
+        // Handle hold-to-record
+        if keyPressed && !modifierKeyDown {
+            modifierKeyDown = true
+            print("Hotkey pressed - starting recording")
+            startRecording()
+        } else if !keyPressed && modifierKeyDown {
+            modifierKeyDown = false
+            print("Hotkey released - stopping recording")
+            stopRecordingAndTranscribe()
         }
     }
     
