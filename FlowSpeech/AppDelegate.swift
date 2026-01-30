@@ -11,7 +11,6 @@ import Carbon.HIToolbox
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
-    var popover: NSPopover!
     var recordingWindow: NSWindow?
     var settingsWindow: NSWindow?
     
@@ -47,20 +46,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Flow Speech")
-            button.action = #selector(togglePopover)
-            button.target = self
         }
         
-        // Create popover for quick access
-        popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 200)
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
-            rootView: MenuBarPopoverView()
-                .environmentObject(appState)
-        )
-        
-        // Build menu
+        // Build simple menu
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Start Recording", action: #selector(toggleRecording), keyEquivalent: "r"))
         menu.addItem(NSMenuItem.separator())
@@ -69,16 +57,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit Flow Speech", action: #selector(quitApp), keyEquivalent: "q"))
         
         statusItem.menu = menu
-    }
-    
-    @objc func togglePopover() {
-        if let button = statusItem.button {
-            if popover.isShown {
-                popover.performClose(nil)
-            } else {
-                popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            }
-        }
     }
     
     // MARK: - Hotkey Setup
