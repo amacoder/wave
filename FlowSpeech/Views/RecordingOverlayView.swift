@@ -128,27 +128,45 @@ struct WaveformView: View {
     let minHeight: CGFloat = 2
     let maxHeight: CGFloat = 20
     
+    private func levelFor(index: Int) -> Float {
+        guard !levels.isEmpty else { return 0 }
+        let levelIndex = min(index * levels.count / barCount, levels.count - 1)
+        return levels[levelIndex]
+    }
+    
+    private func heightFor(level: Float) -> CGFloat {
+        return max(minHeight, CGFloat(level) * maxHeight)
+    }
+    
+    private var barGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
+            startPoint: .bottom,
+            endPoint: .top
+        )
+    }
+    
     var body: some View {
         HStack(spacing: 2) {
             ForEach(0..<barCount, id: \.self) { index in
-                let levelIndex = min(index * levels.count / barCount, levels.count - 1)
-                let level = levels.isEmpty ? 0 : levels[levelIndex]
-                
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    )
-                    .frame(
-                        width: 3,
-                        height: max(minHeight, CGFloat(level) * maxHeight)
-                    )
-                    .animation(.easeOut(duration: 0.05), value: level)
+                WaveformBar(
+                    height: heightFor(level: levelFor(index: index)),
+                    gradient: barGradient
+                )
             }
         }
+    }
+}
+
+struct WaveformBar: View {
+    let height: CGFloat
+    let gradient: LinearGradient
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1)
+            .fill(gradient)
+            .frame(width: 3, height: height)
+            .animation(.easeOut(duration: 0.05), value: height)
     }
 }
 
