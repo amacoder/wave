@@ -111,6 +111,11 @@ class TextInserter {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         
+        print("TextInserter: clipboard set, waiting before paste...")
+        
+        // Small delay to ensure clipboard is ready
+        usleep(50000) // 50ms
+        
         // Simulate Cmd+V
         simulatePaste()
         
@@ -124,17 +129,28 @@ class TextInserter {
     }
     
     private func simulatePaste() {
-        let source = CGEventSource(stateID: .hidSystemState)
+        print("TextInserter: simulating Cmd+V...")
+        
+        let source = CGEventSource(stateID: .combinedSessionState)
+        
+        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false) else {
+            print("TextInserter: ERROR - failed to create CGEvents")
+            return
+        }
         
         // Key down: Cmd + V
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true) // V key
-        keyDown?.flags = .maskCommand
-        keyDown?.post(tap: .cghidEventTap)
+        keyDown.flags = .maskCommand
+        keyDown.post(tap: .cgSessionEventTap)
+        
+        // Small delay between down and up
+        usleep(10000) // 10ms
         
         // Key up: Cmd + V
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false)
-        keyUp?.flags = .maskCommand
-        keyUp?.post(tap: .cghidEventTap)
+        keyUp.flags = .maskCommand
+        keyUp.post(tap: .cgSessionEventTap)
+        
+        print("TextInserter: Cmd+V simulated")
     }
     
     // MARK: - Typing Simulation (Alternative)
