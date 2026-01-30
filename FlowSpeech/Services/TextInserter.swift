@@ -116,36 +116,46 @@ class TextInserter {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         
-        print("TextInserter: clipboard set, pasting via AppleScript...")
+        print("TextInserter: clipboard set, simulating Cmd+V...")
         
-        // Use AppleScript for most reliable paste
-        pasteViaAppleScript()
-        
-        // Restore old clipboard content after a delay
-        if let old = oldContent {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                pasteboard.clearContents()
-                pasteboard.setString(old, forType: .string)
+        // Small delay to ensure clipboard is set
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in
+            simulatePaste()
+            
+            // Restore old clipboard content after paste completes
+            if let old = oldContent {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    pasteboard.clearContents()
+                    pasteboard.setString(old, forType: .string)
+                    print("TextInserter: clipboard restored")
+                }
             }
         }
     }
     
-    private func pasteViaAppleScript() {
-        let script = """
-        tell application "System Events"
-            keystroke "v" using command down
-        end tell
-        """
-        
-        var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: script) {
-            appleScript.executeAndReturnError(&error)
-            if let error = error {
-                print("TextInserter: AppleScript error: \(error)")
-            } else {
-                print("TextInserter: AppleScript paste completed")
-            }
+    private func simulatePaste() {
+        // Create event source
+        guard let source = CGEventSource(stateID: .combinedSessionState) else {
+            print("TextInserter: ERROR - failed to create event source")
+            return
         }
+        
+        // Key code for 'V' is 9
+        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false) else {
+            print("TextInserter: ERROR - failed to create key events")
+            return
+        }
+        
+        // Add Command modifier
+        keyDown.flags = [.maskCommand]
+        keyUp.flags = [.maskCommand]
+        
+        // Post to the session
+        keyDown.post(tap: .cgSessionEventTap)
+        keyUp.post(tap: .cgSessionEventTap)
+        
+        print("TextInserter: Cmd+V posted")
     }
     
     // MARK: - Typing Simulation (Alternative)
