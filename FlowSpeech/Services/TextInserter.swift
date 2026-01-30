@@ -176,59 +176,6 @@ class TextInserter {
         return false
     }
     
-    // MARK: - Clipboard Method
-    
-    private func insertTextViaClipboard(_ text: String) {
-        // Save current clipboard content
-        let pasteboard = NSPasteboard.general
-        let oldContent = pasteboard.string(forType: .string)
-        
-        // Set new text
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-        
-        print("TextInserter: clipboard set, simulating Cmd+V...")
-        
-        // Small delay to ensure clipboard is set
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in
-            simulatePaste()
-            
-            // Restore old clipboard content after paste completes
-            if let old = oldContent {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    pasteboard.clearContents()
-                    pasteboard.setString(old, forType: .string)
-                    print("TextInserter: clipboard restored")
-                }
-            }
-        }
-    }
-    
-    private func simulatePaste() {
-        // Create event source
-        guard let source = CGEventSource(stateID: .combinedSessionState) else {
-            print("TextInserter: ERROR - failed to create event source")
-            return
-        }
-        
-        // Key code for 'V' is 9
-        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false) else {
-            print("TextInserter: ERROR - failed to create key events")
-            return
-        }
-        
-        // Add Command modifier
-        keyDown.flags = [.maskCommand]
-        keyUp.flags = [.maskCommand]
-        
-        // Post to the session
-        keyDown.post(tap: .cgSessionEventTap)
-        keyUp.post(tap: .cgSessionEventTap)
-        
-        print("TextInserter: Cmd+V posted")
-    }
-    
     // MARK: - Typing Simulation (Alternative)
     
     /// Types text character by character using CGEvents
