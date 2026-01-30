@@ -30,7 +30,7 @@ class AppState: ObservableObject {
     
     // Settings
     @Published var selectedModel: WhisperModel = .whisper1
-    @Published var selectedHotkey: HotkeyOption = .capsLock
+    @Published var selectedHotkey: HotkeyOption = .optionSpace
     @Published var launchAtLogin: Bool = false
     @Published var showInDock: Bool = false
     @Published var autoInsertText: Bool = true

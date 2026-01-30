@@ -79,36 +79,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    private var optionKeyDown = false
+    
     private func handleFlagsChanged(_ event: NSEvent) {
-        let capsLockOn = event.modifierFlags.contains(.capsLock)
+        let flags = event.modifierFlags
         
         switch appState.selectedHotkey {
-        case .capsLock:
-            // Hold to record mode
-            if capsLockOn && !capsLockPressed {
-                capsLockPressed = true
+        case .optionSpace, .capsLock:
+            // Use Option key for hold-to-record
+            let optionPressed = flags.contains(.option)
+            
+            if optionPressed && !optionKeyDown {
+                optionKeyDown = true
                 startRecording()
-            } else if !capsLockOn && capsLockPressed {
-                capsLockPressed = false
+            } else if !optionPressed && optionKeyDown {
+                optionKeyDown = false
                 stopRecordingAndTranscribe()
             }
             
-        case .doubleTapCapsLock:
-            // Double-tap mode
-            if capsLockOn {
-                let now = Date()
-                if let lastTime = lastCapsLockTime,
-                   now.timeIntervalSince(lastTime) < 0.4 {
-                    // Double tap detected
-                    if appState.isRecording {
-                        stopRecordingAndTranscribe()
-                    } else {
-                        startRecording()
-                    }
-                    lastCapsLockTime = nil
-                } else {
-                    lastCapsLockTime = now
-                }
+        case .controlSpace:
+            // Use Control key for hold-to-record
+            let controlPressed = flags.contains(.control)
+            
+            if controlPressed && !capsLockPressed {
+                capsLockPressed = true
+                startRecording()
+            } else if !controlPressed && capsLockPressed {
+                capsLockPressed = false
+                stopRecordingAndTranscribe()
             }
             
         default:
@@ -117,25 +115,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func handleKeyDown(_ event: NSEvent) {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        
-        switch appState.selectedHotkey {
-        case .optionSpace:
-            if flags.contains(.option) && event.keyCode == 49 { // Space key
-                toggleRecording()
-            }
-            
-        case .controlSpace:
-            if flags.contains(.control) && event.keyCode == 49 { // Space key
-                toggleRecording()
-            }
-            
-        default:
-            break
-        }
-        
         // Escape to cancel recording
-        if event.keyCode == 53 && appState.isRecording { // Escape key
+        if event.keyCode == 53 && appState.isRecording {
             cancelRecording()
         }
     }
