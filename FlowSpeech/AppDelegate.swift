@@ -109,7 +109,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func handleKeyDown(_ event: NSEvent) {
         // Escape to cancel recording
-        if event.keyCode == 53 && appState.isRecording {
+        if event.keyCode == 53 && appState.phase == .recording {
             cancelRecording()
         }
     }
@@ -125,7 +125,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Recording Actions
     
     @objc func toggleRecording() {
-        if appState.isRecording {
+        if appState.phase == .recording {
             stopRecordingAndTranscribe()
         } else {
             startRecording()
@@ -133,14 +133,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func startRecording() {
-        guard !appState.isRecording else { return }
-        
-        appState.isRecording = true
+        guard appState.phase != .recording else { return }
+
+        appState.phase = .recording
         appState.errorMessage = nil
         appState.audioLevels = Array(repeating: 0.0, count: 30)
-        
+
         // Update menu bar icon
-        updateMenuBarIcon(recording: true)
+        updateMenuBarIcon()
         
         // Show recording overlay
         showRecordingOverlay()
@@ -153,22 +153,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func stopRecordingAndTranscribe() {
-        guard appState.isRecording else { return }
-        
-        appState.isRecording = false
-        appState.isTranscribing = true
-        
+        guard appState.phase == .recording else { return }
+
+        appState.phase = .transcribing
+
         // Stop audio recording
         guard let audioURL = audioRecorder.stopRecording() else {
             appState.errorMessage = "Failed to save recording"
-            appState.isTranscribing = false
+            appState.phase = .idle
             hideRecordingOverlay()
-            updateMenuBarIcon(recording: false)
+            updateMenuBarIcon()
             return
         }
-        
+
         // Update UI
-        updateMenuBarIcon(recording: false)
+        updateMenuBarIcon()
         
         // Transcribe
         Task {
@@ -177,10 +176,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func cancelRecording() {
-        appState.isRecording = false
+        appState.phase = .idle
         audioRecorder.cancelRecording()
         hideRecordingOverlay()
-        updateMenuBarIcon(recording: false)
+        updateMenuBarIcon()
         
         // Play cancel sound
         NSSound(named: "Basso")?.play()
@@ -197,7 +196,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 print("ERROR: No API key found in keychain")
                 await MainActor.run {
                     appState.errorMessage = "No API key configured. Please add your OpenAI API key in Settings."
-                    appState.isTranscribing = false
+                    appState.phase = .idle
                     hideRecordingOverlay()
                 }
                 return
@@ -218,9 +217,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await MainActor.run {
                 print("MainActor block running, autoInsertText: \(appState.autoInsertText)")
                 appState.lastTranscription = transcription
-                appState.isTranscribing = false
+                appState.phase = .done
                 hideRecordingOverlay()
-                
+
+                // Return to idle after brief done state
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                    if self?.appState.phase == .done {
+                        self?.appState.phase = .idle
+                    }
+                }
+
                 // Insert text at cursor (with small delay to let modifier keys settle)
                 if appState.autoInsertText {
                     print("Inserting text at cursor (after delay)...")
@@ -243,9 +249,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("Transcription ERROR: \(error.localizedDescription)")
             await MainActor.run {
                 appState.errorMessage = "Transcription failed: \(error.localizedDescription)"
-                appState.isTranscribing = false
+                appState.phase = .idle
                 hideRecordingOverlay()
-                
+
                 // Play error sound
                 NSSound(named: "Basso")?.play()
             }
@@ -292,16 +298,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Menu Bar Icon
     
-    private func updateMenuBarIcon(recording: Bool) {
+    private func updateMenuBarIcon() {
         DispatchQueue.main.async {
-            if let button = self.statusItem.button {
-                if recording {
-                    button.image = NSImage(systemSymbolName: "mic.badge.plus", accessibilityDescription: "Recording")
-                    button.contentTintColor = .systemRed
-                } else {
-                    button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Flow Speech")
-                    button.contentTintColor = nil
-                }
+            guard let button = self.statusItem.button else { return }
+            switch self.appState.phase {
+            case .idle, .done:
+                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Flow Speech")
+                button.contentTintColor = nil
+            case .recording:
+                button.image = NSImage(systemSymbolName: "mic.badge.plus", accessibilityDescription: "Recording")
+                button.contentTintColor = .systemRed
+            case .transcribing:
+                button.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Transcribing")
+                button.contentTintColor = .systemBlue
             }
         }
     }

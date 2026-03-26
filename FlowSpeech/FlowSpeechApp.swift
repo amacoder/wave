@@ -19,10 +19,22 @@ struct FlowSpeechApp: App {
     }
 }
 
+// MARK: - Recording Phase
+enum RecordingPhase: Equatable {
+    case idle
+    case recording
+    case transcribing
+    case done
+}
+
 // MARK: - App State (Observable)
 class AppState: ObservableObject {
-    @Published var isRecording = false
-    @Published var isTranscribing = false
+    @Published var phase: RecordingPhase = .idle
+
+    // Convenience shims for read-only call sites
+    var isRecording: Bool { phase == .recording }
+    var isTranscribing: Bool { phase == .transcribing }
+
     @Published var lastTranscription: String?
     @Published var errorMessage: String?
     @Published var audioLevel: Float = 0.0
