@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 import Carbon.HIToolbox
 import AppKit
 
@@ -15,6 +16,9 @@ class HotkeyManager: ObservableObject {
     
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+
+    @Published var isTapHealthy: Bool = true
+    private var healthTimer: Timer?
     
     private var onHotkeyDown: HotkeyAction?
     private var onHotkeyUp: HotkeyAction?
@@ -29,6 +33,7 @@ class HotkeyManager: ObservableObject {
     var keyCode: UInt16 = 0
     
     deinit {
+        stopHealthCheck()
         stop()
     }
     
@@ -91,9 +96,11 @@ class HotkeyManager: ObservableObject {
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: eventTap, enable: true)
+        startHealthCheck()
     }
-    
+
     func stop() {
+        stopHealthCheck()
         if let eventTap = eventTap {
             CGEvent.tapEnable(tap: eventTap, enable: false)
         }
@@ -105,7 +112,34 @@ class HotkeyManager: ObservableObject {
         eventTap = nil
         runLoopSource = nil
     }
-    
+
+    // MARK: - Health Check
+
+    func startHealthCheck() {
+        healthTimer = Timer(timeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.checkTapHealth()
+        }
+        RunLoop.main.add(healthTimer!, forMode: .common)
+    }
+
+    private func checkTapHealth() {
+        guard let tap = eventTap else {
+            DispatchQueue.main.async { self.isTapHealthy = false }
+            return
+        }
+        let enabled = CGEvent.tapIsEnabled(tap: tap)
+        if !enabled {
+            CGEvent.tapEnable(tap: tap, enable: true)
+        }
+        let nowHealthy = CGEvent.tapIsEnabled(tap: tap)
+        DispatchQueue.main.async { self.isTapHealthy = nowHealthy }
+    }
+
+    func stopHealthCheck() {
+        healthTimer?.invalidate()
+        healthTimer = nil
+    }
+
     // MARK: - Event Handling
     
     private func handleEvent(type: CGEventType, event: CGEvent) -> Bool? {
@@ -116,6 +150,12 @@ class HotkeyManager: ObservableObject {
             return handleKeyUp(event: event)
         case .flagsChanged:
             return handleFlagsChanged(event: event)
+        case CGEventType(rawValue: 0xFFFFFFFE)!, // tapDisabledByTimeout
+             CGEventType(rawValue: 0xFFFFFFFF)!: // tapDisabledByUserInput
+            if let tap = eventTap {
+                CGEvent.tapEnable(tap: tap, enable: true)
+            }
+            return nil
         default:
             return nil
         }

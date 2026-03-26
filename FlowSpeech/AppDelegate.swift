@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import Carbon.HIToolbox
+import Combine
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
@@ -22,6 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
+    private var cancellables = Set<AnyCancellable>()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
@@ -30,7 +32,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Check for required permissions
         checkPermissions()
-        
+
+        // Observe hotkey tap health
+        hotkeyManager.$isTapHealthy
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] healthy in
+                self?.updateMenuBarIconForHealth(healthy: healthy)
+            }
+            .store(in: &cancellables)
+
         // Show onboarding if first launch
         if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
             showOnboarding()
@@ -315,8 +325,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    // MARK: - Health-based icon
+
+    private var lastKnownHealthy: Bool = true
+
+    private func updateMenuBarIconForHealth(healthy: Bool) {
+        lastKnownHealthy = healthy
+        if !healthy {
+            if let button = statusItem.button {
+                button.image = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Hotkey Unavailable")
+                button.contentTintColor = .systemYellow
+            }
+        } else {
+            updateMenuBarIcon()
+        }
+    }
+
     // MARK: - Settings
-    
+
     @objc func openSettings() {
         if settingsWindow == nil {
             let settingsView = SettingsView()
