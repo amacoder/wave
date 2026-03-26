@@ -52,7 +52,9 @@ Plans:
   2. Each of the four states (idle, recording, transcribing, done) renders a visually distinct appearance — a human observer can identify the current state without any other information
   3. Transitions between states use spring animations with no abrupt cuts or layout jumps
   4. The waveform renders using a Canvas single-draw-pass and the overlay window disappears after a 0.8s done-state flash
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 03-01-PLAN.md — Pill overlay rewrite with 4-state ZStack, Canvas waveform, spring transitions, and done-flash timing
 
 ### Phase 4: App Exclusion
 **Goal**: Users can explicitly exclude apps from triggering dictation, and the hotkey is automatically suppressed when a fullscreen or borderless-windowed app is focused
@@ -73,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete   | 2026-03-26 |
 | 2. Clipboard Persistence | 1/1 | Complete    | 2026-03-26 |
-| 3. Overlay Redesign | 0/TBD | Not started | - |
+| 3. Overlay Redesign | 0/1 | Planning complete | - |
 | 4. App Exclusion | 0/TBD | Not started | - |
 
 ---
