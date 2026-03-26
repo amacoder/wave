@@ -11,7 +11,7 @@ v1.1 builds four capabilities on top of the working v1.0 foundation: a design sy
 ## Phases
 
 - [x] **Phase 1: Foundation** - RecordingPhase enum, design tokens, CGEventTap health, animation gating (completed 2026-03-26)
-- [ ] **Phase 2: Clipboard Persistence** - Fix clipboard restore bug, add changeCount guard and TransientType marker
+- [x] **Phase 2: Clipboard Persistence** - Fix clipboard restore bug, add changeCount guard and TransientType marker (completed 2026-03-26)
 - [ ] **Phase 3: Overlay Redesign** - Pill shape, 4-state rendering, spring animations, Canvas waveform
 - [ ] **Phase 4: App Exclusion** - Installed apps picker, fullscreen detection, Exclusion settings tab
 
@@ -41,7 +41,7 @@ Plans:
   3. Clipboard managers (e.g., Paste, Raycast clipboard history) do not record transcription content due to the TransientType marker
 **Plans:** 1 plan
 Plans:
-- [ ] 02-01-PLAN.md — Remove clipboard restore, add TransientType marker and changeCount guard
+- [x] 02-01-PLAN.md — Remove clipboard restore, add TransientType marker and changeCount guard
 
 ### Phase 3: Overlay Redesign
 **Goal**: The recording overlay is a polished pill shape at bottom-center with distinct visuals for all four states and smooth spring transitions between them
@@ -72,7 +72,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete   | 2026-03-26 |
-| 2. Clipboard Persistence | 0/1 | Not started | - |
+| 2. Clipboard Persistence | 1/1 | Complete    | 2026-03-26 |
 | 3. Overlay Redesign | 0/TBD | Not started | - |
 | 4. App Exclusion | 0/TBD | Not started | - |
 

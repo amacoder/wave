@@ -23,9 +23,9 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 
 ### Clipboard
 
-- [ ] **CLIP-01**: Transcription remains on clipboard after paste (no restore of previous content)
-- [ ] **CLIP-02**: Clipboard restore only occurs if user hasn't copied something else (changeCount guard)
-- [ ] **CLIP-03**: Clipboard writes include TransientType marker for clipboard manager compatibility
+- [x] **CLIP-01**: Transcription remains on clipboard after paste (no restore of previous content)
+- [x] **CLIP-02**: Clipboard restore only occurs if user hasn't copied something else (changeCount guard)
+- [x] **CLIP-03**: Clipboard writes include TransientType marker for clipboard manager compatibility
 
 ### App Exclusion
 
@@ -58,9 +58,9 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 | FNDTN-02 | Phase 1 | Complete |
 | FNDTN-03 | Phase 1 | Complete |
 | FNDTN-04 | Phase 1 | Complete |
-| CLIP-01 | Phase 2 | Pending |
-| CLIP-02 | Phase 2 | Pending |
-| CLIP-03 | Phase 2 | Pending |
+| CLIP-01 | Phase 2 | Complete |
+| CLIP-02 | Phase 2 | Complete |
+| CLIP-03 | Phase 2 | Complete |
 | OVLAY-01 | Phase 3 | Pending |
 | OVLAY-02 | Phase 3 | Pending |
 | OVLAY-03 | Phase 3 | Pending |
