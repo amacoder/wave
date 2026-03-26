@@ -39,7 +39,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 ### Active
 
 - [ ] Redesign overlay and views with Wispr Flow-inspired blue palette
-- [ ] Fix buggy recording overlay appearance when holding Fn
+- [x] Fix buggy recording overlay appearance when holding Fn — Validated in Phase 03
 - [ ] Suppress hotkey activation when games/fullscreen apps are in focus
 - [x] Keep transcription on clipboard after paste (clipboard persistence) — Validated in Phase 02
 - [x] Smooth state transition animations (idle -> recording -> transcribing -> done) — Validated in Phase 01
@@ -57,7 +57,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - State: centralized AppState with RecordingPhase enum (idle/recording/transcribing/done)
 - Design system: DesignSystem.swift with blue palette tokens (deepNavy, vibrantBlue, softBlueWhite, teal)
 - CGEventTap health monitoring with auto-recovery in HotkeyManager
-- Overlay: floating borderless window with .ultraThinMaterial
+- Overlay: pill-shaped Capsule (280x52) at bottom-center with 4-state ZStack, Canvas waveform, spring transitions
 - Text insertion: clipboard + CGEvent Cmd+V (transcription persists on clipboard, TransientType marker hides from clipboard managers)
 - Hotkey detection: dual approach (NSEvent flagsChanged + CGEventTap backup)
 - No app exclusion logic exists currently
@@ -81,4 +81,4 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 | Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | Shipped Phase 02 |
 
 ---
-*Last updated: 2026-03-26 after Phase 02 (Clipboard Persistence) completion*
+*Last updated: 2026-03-26 after Phase 03 (Overlay Redesign) completion*
