@@ -54,26 +54,26 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FNDTN-01 | — | Pending |
-| FNDTN-02 | — | Pending |
-| FNDTN-03 | — | Pending |
-| FNDTN-04 | — | Pending |
-| OVLAY-01 | — | Pending |
-| OVLAY-02 | — | Pending |
-| OVLAY-03 | — | Pending |
-| OVLAY-04 | — | Pending |
-| CLIP-01 | — | Pending |
-| CLIP-02 | — | Pending |
-| CLIP-03 | — | Pending |
-| EXCL-01 | — | Pending |
-| EXCL-02 | — | Pending |
-| EXCL-03 | — | Pending |
+| FNDTN-01 | Phase 1 | Pending |
+| FNDTN-02 | Phase 1 | Pending |
+| FNDTN-03 | Phase 1 | Pending |
+| FNDTN-04 | Phase 1 | Pending |
+| CLIP-01 | Phase 2 | Pending |
+| CLIP-02 | Phase 2 | Pending |
+| CLIP-03 | Phase 2 | Pending |
+| OVLAY-01 | Phase 3 | Pending |
+| OVLAY-02 | Phase 3 | Pending |
+| OVLAY-03 | Phase 3 | Pending |
+| OVLAY-04 | Phase 3 | Pending |
+| EXCL-01 | Phase 4 | Pending |
+| EXCL-02 | Phase 4 | Pending |
+| EXCL-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after initial definition*
+*Last updated: 2026-03-26 — traceability mapped after roadmap creation*
