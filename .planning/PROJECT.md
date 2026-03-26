@@ -41,7 +41,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - [ ] Redesign overlay and views with Wispr Flow-inspired blue palette
 - [ ] Fix buggy recording overlay appearance when holding Fn
 - [ ] Suppress hotkey activation when games/fullscreen apps are in focus
-- [ ] Keep transcription on clipboard after paste (clipboard persistence)
+- [x] Keep transcription on clipboard after paste (clipboard persistence) — Validated in Phase 02
 - [x] Smooth state transition animations (idle -> recording -> transcribing -> done) — Validated in Phase 01
 
 ### Out of Scope
@@ -58,7 +58,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - Design system: DesignSystem.swift with blue palette tokens (deepNavy, vibrantBlue, softBlueWhite, teal)
 - CGEventTap health monitoring with auto-recovery in HotkeyManager
 - Overlay: floating borderless window with .ultraThinMaterial
-- Text insertion: clipboard + CGEvent Cmd+V with 0.5s clipboard restore
+- Text insertion: clipboard + CGEvent Cmd+V (transcription persists on clipboard, TransientType marker hides from clipboard managers)
 - Hotkey detection: dual approach (NSEvent flagsChanged + CGEventTap backup)
 - No app exclusion logic exists currently
 - Reference design: Wispr Flow's "Flow Bar" — small pill overlay, soft neutrals, editorial aesthetic
@@ -78,7 +78,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 | Blue palette over black/beige | User preference; blue is universally appealing and distinct from Wispr Flow | — Pending |
 | Wispr Flow as design reference | Best-in-class UX for push-to-talk dictation apps | — Pending |
 | Game exclusion via app detection | User plays League of Legends; accidental Fn triggers during gaming | — Pending |
-| Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | — Pending |
+| Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | Shipped Phase 02 |
 
 ---
-*Last updated: 2026-03-26 after Phase 01 (Foundation) completion*
+*Last updated: 2026-03-26 after Phase 02 (Clipboard Persistence) completion*
