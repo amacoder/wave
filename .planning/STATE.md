@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Revamp & Polish
 status: unknown
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-26T15:44:31.420Z"
+stopped_at: "Checkpoint 04-02 Task 2: human-verify pending"
+last_updated: "2026-03-26T15:48:36.392Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -51,6 +51,7 @@ Plan: 1 of 2
 | Phase 02-clipboard-persistence P01 | 10 | 2 tasks | 1 file |
 | Phase 03-overlay-redesign P01 | 12 | 2 tasks | 3 files |
 | Phase 04-app-exclusion P01 | 2 | 2 tasks | 3 files |
+| Phase 04-app-exclusion P02 | 1 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Recent decisions affecting current work:
 - [Phase 04-01]: kCGWindowOwnerPID used for fullscreen detection to avoid macOS 26 beta regression FB18327911 affecting status-item attribution
 - [Phase 04-01]: autoSuppressFullscreen defaults to true — aligns with EXCL-02; developers can disable in Exclusion settings tab
 - [Phase 04-01]: First-launch seed via object(forKey:)==nil check seeds both League of Legends bundle IDs defensively
+- [Phase 04-02]: ExclusionSettingsTab registered in project.pbxproj manually — xcodebuild BUILD SUCCEEDED confirms correct wiring
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T15:44:31.417Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-26T15:48:36.387Z
+Stopped at: Checkpoint 04-02 Task 2: human-verify pending
 Resume file: None

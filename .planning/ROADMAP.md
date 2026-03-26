@@ -13,7 +13,7 @@ v1.1 builds four capabilities on top of the working v1.0 foundation: a design sy
 - [x] **Phase 1: Foundation** - RecordingPhase enum, design tokens, CGEventTap health, animation gating (completed 2026-03-26)
 - [x] **Phase 2: Clipboard Persistence** - Fix clipboard restore bug, add changeCount guard and TransientType marker (completed 2026-03-26)
 - [x] **Phase 3: Overlay Redesign** - Pill shape, 4-state rendering, spring animations, Canvas waveform (completed 2026-03-26)
-- [ ] **Phase 4: App Exclusion** - Installed apps picker, fullscreen detection, Exclusion settings tab
+- [x] **Phase 4: App Exclusion** - Installed apps picker, fullscreen detection, Exclusion settings tab (completed 2026-03-26)
 
 ## Phase Details
 
@@ -64,7 +64,7 @@ Plans:
   1. User can open Settings, navigate to an Exclusion tab, browse installed apps with a search field, and toggle exclusion via checkboxes — no manual bundle ID entry required
   2. Holding the hotkey while a manually excluded app (e.g., League of Legends) is in focus does not start recording
   3. Holding the hotkey while any fullscreen or borderless-windowed app is focused does not start recording (when auto-suppress toggle is enabled)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 04-01-PLAN.md — AppExclusionService with suppression logic, fullscreen detection, and hotkey guard wiring
 - [ ] 04-02-PLAN.md — ExclusionSettingsTab UI with installed apps picker, search, checkboxes, and visual verification
@@ -79,7 +79,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 2/2 | Complete   | 2026-03-26 |
 | 2. Clipboard Persistence | 1/1 | Complete    | 2026-03-26 |
 | 3. Overlay Redesign | 1/1 | Complete   | 2026-03-26 |
-| 4. App Exclusion | 1/2 | In Progress|  |
+| 4. App Exclusion | 2/2 | Complete   | 2026-03-26 |
 
 ---
 *Roadmap created: 2026-03-26*
