@@ -10,17 +10,19 @@ import ServiceManagement
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
-    
+    @EnvironmentObject var exclusionService: AppExclusionService
+
     @State private var apiKey: String = ""
     @State private var showAPIKey: Bool = false
     @State private var isAPIKeySaved: Bool = false
     @State private var selectedTab: SettingsTab = .general
-    
+
     enum SettingsTab: String, CaseIterable {
         case general = "General"
         case hotkey = "Hotkey"
         case transcription = "Transcription"
         case api = "API"
+        case exclusion = "Exclusion"
         case about = "About"
     }
     
@@ -41,14 +43,19 @@ struct SettingsView: View {
             APISettingsTab(apiKey: $apiKey, showAPIKey: $showAPIKey, isAPIKeySaved: $isAPIKeySaved)
                 .tabItem { Label("API", systemImage: "key") }
                 .tag(SettingsTab.api)
-            
+
+            ExclusionSettingsTab()
+                .tabItem { Label("Exclusion", systemImage: "hand.raised") }
+                .tag(SettingsTab.exclusion)
+
             AboutTab()
                 .tabItem { Label("About", systemImage: "info.circle") }
                 .tag(SettingsTab.about)
         }
         .padding(20)
-        .frame(width: 500, height: 400)
+        .frame(width: 500, height: selectedTab == .exclusion ? 520 : 400)
         .environmentObject(appState)
+        .environmentObject(exclusionService)
         .onAppear {
             isAPIKeySaved = KeychainManager.shared.hasAPIKey()
         }
@@ -394,4 +401,5 @@ struct AboutTab: View {
 #Preview {
     SettingsView()
         .environmentObject(AppState())
+        .environmentObject(AppExclusionService())
 }
