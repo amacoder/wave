@@ -228,9 +228,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 print("MainActor block running, autoInsertText: \(appState.autoInsertText)")
                 appState.lastTranscription = transcription
                 appState.phase = .done
-                hideRecordingOverlay()
 
-                // Return to idle after brief done state
+                // Show done flash for 0.8s, then hide overlay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                    self?.hideRecordingOverlay()
+                }
+
+                // Return to idle after 1.5s (unchanged timing)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                     if self?.appState.phase == .done {
                         self?.appState.phase = .idle
@@ -274,9 +278,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if recordingWindow == nil {
             let contentView = RecordingOverlayView()
                 .environmentObject(appState)
-            
+
             recordingWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 200, height: 80),
+                contentRect: NSRect(x: 0, y: 0, width: 280, height: 52),
                 styleMask: [.borderless],
                 backing: .buffered,
                 defer: false
@@ -287,18 +291,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             recordingWindow?.level = .floating
             recordingWindow?.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
             recordingWindow?.hasShadow = true
-            recordingWindow?.ignoresMouseEvents = true // Don't steal focus
         }
-        
-        // Position near the mouse cursor or center of screen
+
+        // Position pill at bottom-center on every show (fixes window resize not triggered)
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
-            let windowSize = recordingWindow!.frame.size
-            let x = screenFrame.midX - windowSize.width / 2
-            let y = screenFrame.maxY - windowSize.height - 100
-            recordingWindow?.setFrameOrigin(NSPoint(x: x, y: y))
+            let pillWidth: CGFloat = 280
+            let pillHeight: CGFloat = 52
+            let x = screenFrame.midX - pillWidth / 2
+            let y = screenFrame.minY + 32  // 32pt above the Dock
+            recordingWindow?.setFrame(
+                NSRect(x: x, y: y, width: pillWidth, height: pillHeight),
+                display: true
+            )
         }
-        
+
+        recordingWindow?.ignoresMouseEvents = true // Don't steal focus
         recordingWindow?.orderFront(nil)
     }
     
