@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Revamp & Polish
 status: unknown
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-26T15:12:19.593Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-26T15:44:31.420Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Hold a key, speak, and have accurate text appear where you need it — zero friction dictation.
-**Current focus:** Phase 03 — overlay-redesign
+**Current focus:** Phase 04 — app-exclusion
 
 ## Current Position
 
-Phase: 03 (overlay-redesign) — EXECUTING
-Plan: 1 of 1
+Phase: 04 (app-exclusion) — EXECUTING
+Plan: 1 of 2
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Plan: 1 of 1
 | Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
 | Phase 02-clipboard-persistence P01 | 10 | 2 tasks | 1 file |
 | Phase 03-overlay-redesign P01 | 12 | 2 tasks | 3 files |
+| Phase 04-app-exclusion P01 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 03-01]: hideRecordingOverlay() delayed 0.8s after appState.phase = .done to show done-state checkmark flash
 - [Phase 03-01]: Canvas flat vibrantBlue fill (not gradient) for waveform bars per spec
 - [Phase 03-01]: ZIndex per ZStack branch to prevent crossfade drawing-order artifacts on spring transitions
+- [Phase 04-01]: kCGWindowOwnerPID used for fullscreen detection to avoid macOS 26 beta regression FB18327911 affecting status-item attribution
+- [Phase 04-01]: autoSuppressFullscreen defaults to true — aligns with EXCL-02; developers can disable in Exclusion settings tab
+- [Phase 04-01]: First-launch seed via object(forKey:)==nil check seeds both League of Legends bundle IDs defensively
 
 ### Pending Todos
 
@@ -89,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T15:08:55.074Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-26T15:44:31.417Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None

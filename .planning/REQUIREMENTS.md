@@ -29,8 +29,8 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 
 ### App Exclusion
 
-- [ ] **EXCL-01**: User can select apps to exclude from an installed apps picker (no manual bundle ID entry)
-- [ ] **EXCL-02**: Hotkey is auto-suppressed when frontmost app is in fullscreen or borderless-windowed mode
+- [x] **EXCL-01**: User can select apps to exclude from an installed apps picker (no manual bundle ID entry)
+- [x] **EXCL-02**: Hotkey is auto-suppressed when frontmost app is in fullscreen or borderless-windowed mode
 - [ ] **EXCL-03**: Settings includes an Exclusion tab with installed apps list, search, and checkboxes
 
 ## Future Requirements
@@ -65,8 +65,8 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 | OVLAY-02 | Phase 3 | Complete |
 | OVLAY-03 | Phase 3 | Complete |
 | OVLAY-04 | Phase 3 | Complete |
-| EXCL-01 | Phase 4 | Pending |
-| EXCL-02 | Phase 4 | Pending |
+| EXCL-01 | Phase 4 | Complete |
+| EXCL-02 | Phase 4 | Complete |
 | EXCL-03 | Phase 4 | Pending |
 
 **Coverage:**
