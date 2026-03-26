@@ -16,14 +16,14 @@ struct OnboardingView: View {
     private let steps = [
         OnboardingStep(
             icon: "mic.fill",
-            title: "Welcome to Flow Speech",
+            title: "Welcome to Wave",
             description: "Effortless voice dictation for macOS. Speak naturally and let AI convert your voice to polished text.",
             action: nil
         ),
         OnboardingStep(
             icon: "key.fill",
             title: "Connect to OpenAI",
-            description: "Flow Speech uses OpenAI's Whisper API for transcription. You'll need an API key to get started.",
+            description: "Wave uses OpenAI's Whisper API for transcription. You'll need an API key to get started.",
             action: .apiKey
         ),
         OnboardingStep(
@@ -35,7 +35,7 @@ struct OnboardingView: View {
         OnboardingStep(
             icon: "hand.raised.fill",
             title: "Grant Permissions",
-            description: "Flow Speech needs access to your microphone and accessibility features to insert text.",
+            description: "Wave needs access to your microphone and accessibility features to insert text.",
             action: .permissions
         ),
         OnboardingStep(

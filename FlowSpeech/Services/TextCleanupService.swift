@@ -25,7 +25,7 @@ class TextCleanupService {
 
     // MARK: - Cleanup
 
-    func cleanup(text: String, apiKey: String) async throws -> String {
+    func cleanup(text: String, apiKey: String) async -> String {
         let systemPrompt = """
         You are a transcript cleanup assistant. Clean up the following speech transcript by: \
         1) Removing filler words (um, uh, like, you know, basically, literally, sort of, kind of, I mean, right, actually, honestly). \

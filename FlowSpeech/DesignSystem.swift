@@ -1,28 +1,28 @@
 //
 //  DesignSystem.swift
-//  FlowSpeech
+//  Wave
 //
-//  Centralized design tokens for the blue palette
+//  Centralized design tokens for the amber/yellow palette
 //
 
 import SwiftUI
 
 enum DesignSystem {
     enum Colors {
-        /// #0F172A - darkest background, overlays, menu bar popover
-        static let deepNavy = Color(hex: "0F172A")
-        /// #2563EB - primary accent, recording indicator, gradients
-        static let vibrantBlue = Color(hex: "2563EB")
-        /// #E0F2FE - light text on dark backgrounds, highlights
-        static let softBlueWhite = Color(hex: "E0F2FE")
-        /// #0D9488 - legacy teal for existing gradient endpoints
-        static let teal = Color(hex: "0D9488")
+        /// #1C1917 - darkest background, overlays, menu bar popover
+        static let deepNavy = Color(hex: "1C1917")
+        /// #FBBF24 - primary accent, amber yellow from icon
+        static let vibrantBlue = Color(hex: "FBBF24")
+        /// #FEF3C7 - light warm white for text on dark backgrounds
+        static let softBlueWhite = Color(hex: "FEF3C7")
+        /// #F59E0B - darker amber for gradient endpoints
+        static let teal = Color(hex: "F59E0B")
 
         /// Semantic aliases for common uses
         static let accentGradient = LinearGradient(
-            colors: [vibrantBlue, teal],
-            startPoint: .leading,
-            endPoint: .trailing
+            colors: [Color(hex: "FDE68A"), Color(hex: "F59E0B")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
         )
     }
 }

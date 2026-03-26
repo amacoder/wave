@@ -55,12 +55,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem.button {
-            if let menuBarIcon = NSImage(named: "MenuBarIcon") {
-                menuBarIcon.isTemplate = true
-                button.image = menuBarIcon
-            } else {
-                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Wave")
-            }
+            button.image = makeMenuBarIcon()
         }
         
         // Build simple menu
@@ -219,6 +214,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     appState.errorMessage = "No API key configured. Please add your OpenAI API key in Settings."
                     appState.phase = .idle
                     hideRecordingOverlay()
+                    updateMenuBarIcon()
                 }
                 return
             }
@@ -247,6 +243,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 print("MainActor block running, autoInsertText: \(appState.autoInsertText)")
                 appState.lastTranscription = finalText
                 appState.phase = .done
+                updateMenuBarIcon()
 
                 // Show done flash for 0.8s, then hide overlay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
@@ -257,6 +254,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                     if self?.appState.phase == .done {
                         self?.appState.phase = .idle
+                        self?.updateMenuBarIcon()
                     }
                 }
 
@@ -284,6 +282,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 appState.errorMessage = "Transcription failed: \(error.localizedDescription)"
                 appState.phase = .idle
                 hideRecordingOverlay()
+                updateMenuBarIcon()
 
                 // Play error sound
                 NSSound(named: "Basso")?.play()
@@ -334,20 +333,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     // MARK: - Menu Bar Icon
-    
+
+    private func makeMenuBarIcon(color: NSColor? = nil) -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let image = NSImage(size: size, flipped: false) { rect in
+            let path = NSBezierPath()
+            let sx: CGFloat = 18.0 / 16.0
+            let sy: CGFloat = 18.0 / 16.0
+            path.move(to: NSPoint(x: 2 * sx, y: 18 - 8.5 * sy))
+            path.curve(to: NSPoint(x: 5 * sx, y: 18 - 4.5 * sy),
+                       controlPoint1: NSPoint(x: 2.8 * sx, y: 18 - 8.5 * sy),
+                       controlPoint2: NSPoint(x: 3.5 * sx, y: 18 - 4.5 * sy))
+            path.curve(to: NSPoint(x: 8 * sx, y: 18 - 9.0 * sy),
+                       controlPoint1: NSPoint(x: 6 * sx, y: 18 - 4.5 * sy),
+                       controlPoint2: NSPoint(x: 6.2 * sx, y: 18 - 8.2 * sy))
+            path.curve(to: NSPoint(x: 11 * sx, y: 18 - 4.5 * sy),
+                       controlPoint1: NSPoint(x: 9.8 * sx, y: 18 - 9.8 * sy),
+                       controlPoint2: NSPoint(x: 9.5 * sx, y: 18 - 4.5 * sy))
+            path.curve(to: NSPoint(x: 14 * sx, y: 18 - 8.5 * sy),
+                       controlPoint1: NSPoint(x: 12.5 * sx, y: 18 - 4.5 * sy),
+                       controlPoint2: NSPoint(x: 13.2 * sx, y: 18 - 8.5 * sy))
+            path.lineWidth = 2.2 * sx
+            path.lineCapStyle = .round
+            (color ?? NSColor.black).setStroke()
+            path.stroke()
+            return true
+        }
+        // Only use template mode for default (no color) — lets system handle dark/light
+        image.isTemplate = (color == nil)
+        return image
+    }
+
     private func updateMenuBarIcon() {
         DispatchQueue.main.async {
             guard let button = self.statusItem.button else { return }
             switch self.appState.phase {
             case .idle, .done:
-                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Wave")
-                button.contentTintColor = nil
+                button.image = self.makeMenuBarIcon()
             case .recording:
-                button.image = NSImage(systemSymbolName: "mic.badge.plus", accessibilityDescription: "Recording")
-                button.contentTintColor = .systemRed
+                button.image = self.makeMenuBarIcon(color: NSColor(red: 0.984, green: 0.749, blue: 0.141, alpha: 1))
             case .transcribing:
-                button.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Transcribing")
-                button.contentTintColor = .systemBlue
+                button.image = self.makeMenuBarIcon(color: NSColor(red: 0.961, green: 0.620, blue: 0.043, alpha: 1))
             }
         }
     }

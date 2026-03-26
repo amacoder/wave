@@ -16,7 +16,7 @@ struct MenuBarPopoverView: View {
             HStack {
                 Image(systemName: "mic.fill")
                     .foregroundStyle(DesignSystem.Colors.accentGradient)
-                Text("Flow Speech")
+                Text("Wave")
                     .font(.headline)
                 Spacer()
             }
@@ -265,7 +265,7 @@ struct CompactMenuBarView: View {
                 Divider()
                     .padding(.vertical, 4)
                 
-                MenuBarButton(title: "Quit Flow Speech", shortcut: "⌘Q") {
+                MenuBarButton(title: "Quit Wave", shortcut: "⌘Q") {
                     NSApplication.shared.terminate(nil)
                 }
             }

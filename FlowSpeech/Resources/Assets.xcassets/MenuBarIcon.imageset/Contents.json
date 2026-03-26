@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "filename" : "wave_icon.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "wave_icon@2x.png", "idiom" : "universal", "scale" : "2x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 },
+  "properties" : { "preserves-vector-representation" : true, "template-rendering-intent" : "template" }
+}

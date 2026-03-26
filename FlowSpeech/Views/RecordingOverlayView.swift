@@ -2,7 +2,7 @@
 //  RecordingOverlayView.swift
 //  FlowSpeech
 //
-//  Pill overlay with 4-state ZStack, Canvas waveform, and spring transitions
+//  Compact pill overlay (Glaido-inspired) — icon + waveform/dots, no text
 //
 
 import SwiftUI
@@ -10,164 +10,111 @@ import SwiftUI
 struct RecordingOverlayView: View {
     @EnvironmentObject var appState: AppState
     @State private var pulseScale: CGFloat = 1.0
-    @State private var spinnerRotation: Double = 0
+    @State private var dotPhase: Int = 0
+    @State private var dotTimer: Timer?
 
     var body: some View {
-        ZStack {
-            if appState.phase == .idle {
-                idleState
-                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                    .zIndex(appState.phase == .idle ? 1 : 0)
-            } else if appState.phase == .recording {
-                recordingState
-                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                    .zIndex(appState.phase == .recording ? 1 : 0)
-            } else if appState.phase == .transcribing {
-                transcribingState
-                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                    .zIndex(appState.phase == .transcribing ? 1 : 0)
-            } else if appState.phase == .done {
-                doneState
-                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                    .zIndex(appState.phase == .done ? 1 : 0)
+        HStack(spacing: 6) {
+            // App icon (left side)
+            Image("WaveOverlayIcon")
+                .resizable()
+                .frame(width: 24, height: 24)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            // State indicator (right side)
+            Group {
+                switch appState.phase {
+                case .idle:
+                    EmptyView()
+                case .recording:
+                    recordingWaveform
+                case .transcribing:
+                    processingDots
+                case .done:
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(DesignSystem.Colors.softBlueWhite)
+                }
             }
         }
-        .frame(width: 280, height: 52)
+        .padding(.leading, 6)
+        .padding(.trailing, appState.phase == .idle ? 6 : 10)
+        .frame(height: 36)
         .background(
             Capsule()
-                .fill(DesignSystem.Colors.deepNavy.opacity(0.92))
-                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
+                .fill(DesignSystem.Colors.deepNavy.opacity(0.94))
+                .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         )
         .clipShape(Capsule())
-        .animation(.spring(duration: 0.35, bounce: 0.1), value: appState.phase)
+        .animation(.spring(duration: 0.3, bounce: 0.1), value: appState.phase)
         .onChange(of: appState.phase) { _, newPhase in
-            // Phase-gated animations (FNDTN-04 pattern)
-            if newPhase == .recording {
-                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                    pulseScale = 1.3
-                }
-            } else {
-                withAnimation(.linear(duration: 0)) {
-                    pulseScale = 1.0
-                }
-            }
-
             if newPhase == .transcribing {
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    spinnerRotation = 360
-                }
+                startDotAnimation()
             } else {
-                withAnimation(.linear(duration: 0)) {
-                    spinnerRotation = 0
-                }
+                stopDotAnimation()
             }
         }
         .onAppear {
-            if appState.phase == .recording {
-                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                    pulseScale = 1.3
-                }
-            }
             if appState.phase == .transcribing {
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    spinnerRotation = 360
-                }
+                startDotAnimation()
             }
+        }
+        .onDisappear {
+            stopDotAnimation()
         }
     }
 
-    // MARK: - Idle State
+    // MARK: - Recording Waveform
 
-    private var idleState: some View {
-        HStack {
-            Image(systemName: "mic")
-                .font(.system(size: 16))
-                .foregroundColor(DesignSystem.Colors.softBlueWhite.opacity(0.5))
-        }
-    }
+    private var recordingWaveform: some View {
+        Canvas { context, size in
+            let levels = appState.audioLevels
+            let barCount = min(levels.count, 12)
+            guard barCount > 0 else { return }
+            let gap: CGFloat = 2
+            let barWidth: CGFloat = 3
+            let totalWidth = CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * gap
+            let startX = (size.width - totalWidth) / 2
 
-    // MARK: - Recording State
-
-    private var recordingState: some View {
-        HStack(spacing: 8) {
-            // Pulsing recording indicator
-            ZStack {
-                Circle()
-                    .fill(Color.red.opacity(0.2))
-                    .frame(width: 32, height: 32)
-                    .scaleEffect(pulseScale)
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 12, height: 12)
-            }
-
-            Text("Recording...")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(DesignSystem.Colors.softBlueWhite)
-
-            // Canvas waveform
-            Canvas { context, size in
-                let levels = appState.audioLevels
-                let count = levels.count
-                guard count > 0 else { return }
-                let gap: CGFloat = 2
-                let barWidth: CGFloat = (size.width - gap * CGFloat(count - 1)) / CGFloat(count)
-
-                for (i, level) in levels.enumerated() {
-                    let barHeight = max(3, CGFloat(level) * size.height)
-                    let x = CGFloat(i) * (barWidth + gap)
-                    let y = (size.height - barHeight) / 2
-                    let rect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
-                    context.fill(
-                        Path(roundedRect: rect, cornerRadius: 2),
-                        with: .color(DesignSystem.Colors.vibrantBlue)
-                    )
-                }
-            }
-            .frame(width: 80, height: 24)
-
-            Text("ESC to cancel")
-                .font(.caption2)
-                .foregroundColor(DesignSystem.Colors.softBlueWhite.opacity(0.6))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    Capsule()
-                        .fill(DesignSystem.Colors.softBlueWhite.opacity(0.1))
+            for i in 0..<barCount {
+                let level = i < levels.count ? levels[i] : 0.1
+                let barHeight = max(4, CGFloat(level) * size.height * 0.9)
+                let x = startX + CGFloat(i) * (barWidth + gap)
+                let y = (size.height - barHeight) / 2
+                let rect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
+                context.fill(
+                    Path(roundedRect: rect, cornerRadius: 1.5),
+                    with: .color(DesignSystem.Colors.vibrantBlue)
                 )
+            }
         }
-        .padding(.horizontal, 16)
+        .frame(width: 60, height: 20)
     }
 
-    // MARK: - Transcribing State
+    // MARK: - Processing Dots
 
-    private var transcribingState: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .trim(from: 0, to: 0.7)
-                .stroke(
-                    DesignSystem.Colors.accentGradient,
-                    style: StrokeStyle(lineWidth: 3, lineCap: .round)
-                )
-                .frame(width: 24, height: 24)
-                .rotationEffect(.degrees(spinnerRotation))
-
-            Text("Transcribing...")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(DesignSystem.Colors.softBlueWhite)
+    private var processingDots: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(DesignSystem.Colors.softBlueWhite.opacity(dotPhase == i ? 1.0 : 0.3))
+                    .frame(width: 6, height: 6)
+                    .animation(.easeInOut(duration: 0.3), value: dotPhase)
+            }
         }
     }
 
-    // MARK: - Done State
-
-    private var doneState: some View {
-        HStack {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 20))
-                .foregroundColor(DesignSystem.Colors.softBlueWhite)
+    private func startDotAnimation() {
+        dotPhase = 0
+        dotTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
+            dotPhase = (dotPhase + 1) % 3
         }
+    }
+
+    private func stopDotAnimation() {
+        dotTimer?.invalidate()
+        dotTimer = nil
+        dotPhase = 0
     }
 }
 
