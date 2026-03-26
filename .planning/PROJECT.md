@@ -42,7 +42,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - [ ] Fix buggy recording overlay appearance when holding Fn
 - [ ] Suppress hotkey activation when games/fullscreen apps are in focus
 - [ ] Keep transcription on clipboard after paste (clipboard persistence)
-- [ ] Smooth state transition animations (idle -> recording -> transcribing -> done)
+- [x] Smooth state transition animations (idle -> recording -> transcribing -> done) — Validated in Phase 01
 
 ### Out of Scope
 
@@ -54,8 +54,9 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 
 - SwiftUI macOS app, 11 Swift source files
 - Architecture: AppDelegate orchestrates services (AudioRecorder, WhisperService, TextInserter, HotkeyManager, KeychainManager)
-- State: centralized AppState observable object
-- Current color scheme: blue #2563EB to teal #0D9488 gradient
+- State: centralized AppState with RecordingPhase enum (idle/recording/transcribing/done)
+- Design system: DesignSystem.swift with blue palette tokens (deepNavy, vibrantBlue, softBlueWhite, teal)
+- CGEventTap health monitoring with auto-recovery in HotkeyManager
 - Overlay: floating borderless window with .ultraThinMaterial
 - Text insertion: clipboard + CGEvent Cmd+V with 0.5s clipboard restore
 - Hotkey detection: dual approach (NSEvent flagsChanged + CGEventTap backup)
@@ -80,4 +81,4 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 | Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | — Pending |
 
 ---
-*Last updated: 2026-03-26 after milestone v1.1 initialization*
+*Last updated: 2026-03-26 after Phase 01 (Foundation) completion*
