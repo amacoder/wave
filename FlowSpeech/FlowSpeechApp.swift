@@ -41,11 +41,12 @@ class AppState: ObservableObject {
     @Published var audioLevels: [Float] = Array(repeating: 0.0, count: 30)
     
     // Settings
-    @Published var selectedModel: WhisperModel = .whisper1
+    @Published var selectedModel: WhisperModel = .gpt4oTranscribe
     @Published var selectedHotkey: HotkeyOption = .fnKey
     @Published var launchAtLogin: Bool = false
     @Published var showInDock: Bool = false
     @Published var autoInsertText: Bool = true
+    @Published var smartCleanup: Bool = true
     @Published var language: String = "auto"
     
     init() {
@@ -68,6 +69,10 @@ class AppState: ObservableObject {
         if defaults.object(forKey: "autoInsertText") != nil {
             autoInsertText = defaults.bool(forKey: "autoInsertText")
         }
+        // Only load smartCleanup if it was explicitly set, otherwise keep default (true)
+        if defaults.object(forKey: "smartCleanup") != nil {
+            smartCleanup = defaults.bool(forKey: "smartCleanup")
+        }
         if let lang = defaults.string(forKey: "language") {
             language = lang
         }
@@ -80,6 +85,7 @@ class AppState: ObservableObject {
         defaults.set(launchAtLogin, forKey: "launchAtLogin")
         defaults.set(showInDock, forKey: "showInDock")
         defaults.set(autoInsertText, forKey: "autoInsertText")
+        defaults.set(smartCleanup, forKey: "smartCleanup")
         defaults.set(language, forKey: "language")
     }
     
@@ -98,13 +104,17 @@ class AppState: ObservableObject {
 
 // MARK: - Whisper Model Options
 enum WhisperModel: String, CaseIterable, Identifiable {
+    case gpt4oTranscribe = "gpt-4o-transcribe"
+    case gpt4oMiniTranscribe = "gpt-4o-mini-transcribe"
     case whisper1 = "whisper-1"
-    
+
     var id: String { rawValue }
-    
+
     var displayName: String {
         switch self {
-        case .whisper1: return "Whisper-1"
+        case .gpt4oTranscribe: return "GPT-4o Transcribe"
+        case .gpt4oMiniTranscribe: return "GPT-4o Mini Transcribe"
+        case .whisper1: return "Whisper-1 (Legacy)"
         }
     }
 }

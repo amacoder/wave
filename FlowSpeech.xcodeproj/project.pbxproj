@@ -22,6 +22,7 @@
 		A10000010000000000000013 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000015 /* DesignSystem.swift */; };
 		A10000010000000000000016 /* AppExclusionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000016 /* AppExclusionService.swift */; };
 		A10000010000000000000017 /* ExclusionSettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000017 /* ExclusionSettingsTab.swift */; };
+		A10000010000000000000018 /* TextCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000018 /* TextCleanupService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 		A10000020000000000000015 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A10000020000000000000016 /* AppExclusionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppExclusionService.swift; sourceTree = "<group>"; };
 		A10000020000000000000017 /* ExclusionSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExclusionSettingsTab.swift; sourceTree = "<group>"; };
+		A10000020000000000000018 /* TextCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextCleanupService.swift; sourceTree = "<group>"; };
 		A10000030000000000000001 /* FlowSpeech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlowSpeech.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -88,6 +90,7 @@
 				A10000020000000000000006 /* TextInserter.swift */,
 				A10000020000000000000007 /* HotkeyManager.swift */,
 				A10000020000000000000016 /* AppExclusionService.swift */,
+				A10000020000000000000018 /* TextCleanupService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -203,6 +206,7 @@
 				A10000010000000000000010 /* OnboardingView.swift in Sources */,
 				A10000010000000000000011 /* MenuBarPopoverView.swift in Sources */,
 				A10000010000000000000017 /* ExclusionSettingsTab.swift in Sources */,
+				A10000010000000000000018 /* TextCleanupService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
