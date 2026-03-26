@@ -1,4 +1,4 @@
-# Flow Speech - Voice Dictation App for macOS
+# Wave - Voice Dictation App for macOS
 
 **Status:** ✅ Ready for Testing  
 **Created:** 2026-01-29  
@@ -9,7 +9,7 @@
 
 ## Overview
 
-Flow Speech is a native macOS voice dictation app inspired by Wispr Flow. It provides effortless voice-to-text in any application using OpenAI's Whisper API.
+Wave is a native macOS voice dictation app. It provides effortless voice-to-text in any application using OpenAI's transcription API.
 
 ## Implementation Status
 
@@ -210,7 +210,6 @@ xcodebuild -scheme FlowSpeech -configuration Release archive
 ## Resources
 
 - [OpenAI Speech-to-Text Docs](https://platform.openai.com/docs/guides/speech-to-text)
-- [Wispr Flow](https://wisprflow.ai/)
 - [Apple AVFoundation](https://developer.apple.com/av-foundation/)
 - [Apple Accessibility](https://developer.apple.com/documentation/accessibility)
 

@@ -1,6 +1,6 @@
 //
 //  MenuBarPopoverView.swift
-//  FlowSpeech
+//  Wave
 //
 //  Quick access popover from menu bar
 //

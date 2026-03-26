@@ -1,6 +1,6 @@
 //
 //  HotkeyManager.swift
-//  FlowSpeech
+//  Wave
 //
 //  Global hotkey management using Carbon and CGEvent
 //

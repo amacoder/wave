@@ -1,6 +1,6 @@
 //
 //  TextInserter.swift
-//  FlowSpeech
+//  Wave
 //
 //  Inserts transcribed text at cursor using Accessibility API
 //

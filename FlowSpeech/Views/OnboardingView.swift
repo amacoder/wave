@@ -1,6 +1,6 @@
 //
 //  OnboardingView.swift
-//  FlowSpeech
+//  Wave
 //
 //  First-run setup wizard
 //

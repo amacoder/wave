@@ -1,6 +1,6 @@
 //
 //  AppExclusionService.swift
-//  FlowSpeech
+//  Wave
 //
 //  Owns the manual exclusion list, installed-apps discovery (NSMetadataQuery),
 //  and fullscreen/borderless-window detection (CGWindowListCopyWindowInfo).

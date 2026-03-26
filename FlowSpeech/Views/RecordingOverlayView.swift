@@ -1,6 +1,6 @@
 //
 //  RecordingOverlayView.swift
-//  FlowSpeech
+//  Wave
 //
 //  Compact pill overlay (Glaido-inspired) — icon + waveform/dots, no text
 //

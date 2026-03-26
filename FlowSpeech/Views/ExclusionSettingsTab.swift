@@ -1,6 +1,6 @@
 //
 //  ExclusionSettingsTab.swift
-//  FlowSpeech
+//  Wave
 //
 //  Settings tab for managing app exclusions and auto-suppress fullscreen toggle.
 //

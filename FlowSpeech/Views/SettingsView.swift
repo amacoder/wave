@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  FlowSpeech
+//  Wave
 //
 //  Settings window with sidebar navigation (Stash-style)
 //

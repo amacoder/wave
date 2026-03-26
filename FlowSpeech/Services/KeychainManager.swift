@@ -1,6 +1,6 @@
 //
 //  KeychainManager.swift
-//  FlowSpeech
+//  Wave
 //
 //  Secure storage for API keys using macOS Keychain
 //

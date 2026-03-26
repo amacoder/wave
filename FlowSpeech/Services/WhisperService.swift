@@ -1,6 +1,6 @@
 //
 //  WhisperService.swift
-//  FlowSpeech
+//  Wave
 //
 //  OpenAI Whisper API integration
 //

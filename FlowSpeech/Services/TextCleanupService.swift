@@ -1,6 +1,6 @@
 //
 //  TextCleanupService.swift
-//  FlowSpeech
+//  Wave
 //
 //  GPT-4o-mini post-processing for transcript cleanup
 //

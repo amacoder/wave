@@ -1,9 +1,9 @@
 //
 //  FlowSpeechApp.swift
-//  FlowSpeech
+//  Wave
 //
 //  Created by Amadeus
-//  Voice dictation app inspired by Wispr Flow
+//  Voice dictation app for macOS
 //
 
 import SwiftUI

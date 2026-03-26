@@ -1,6 +1,6 @@
 //
 //  AudioRecorder.swift
-//  FlowSpeech
+//  Wave
 //
 //  AVFoundation audio recording with level metering
 //

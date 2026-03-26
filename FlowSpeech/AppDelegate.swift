@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  FlowSpeech
+//  Wave
 //
 //  Menu bar app setup and global hotkey handling
 //

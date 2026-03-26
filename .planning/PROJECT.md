@@ -1,4 +1,4 @@
-# SpeechFlow
+# Wave
 
 ## What This Is
 
@@ -10,10 +10,10 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 
 ## Current Milestone: v1.1 UI Revamp & Polish
 
-**Goal:** Redesign the UI with a polished, Wispr Flow-inspired blue aesthetic, fix UX bugs, and add smart app exclusion and clipboard resilience.
+**Goal:** Redesign the UI with a polished amber aesthetic, fix UX bugs, and add smart app exclusion and clipboard resilience.
 
 **Target features:**
-- UI overhaul with blue color palette (Wispr Flow "Flow Bar" inspired)
+- UI overhaul with amber/yellow color palette
 - Recording overlay redesign with smooth animations
 - Game/fullscreen app exclusion (suppress hotkey in games)
 - Clipboard persistence (transcription always available via Cmd+V)
@@ -38,7 +38,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 
 ### Active
 
-- [ ] Redesign overlay and views with Wispr Flow-inspired blue palette
+- [ ] Redesign overlay and views with Glaido-inspired blue palette
 - [x] Fix buggy recording overlay appearance when holding Fn — Validated in Phase 03
 - [x] Suppress hotkey activation when games/fullscreen apps are in focus — Validated in Phase 04
 - [x] Keep transcription on clipboard after paste (clipboard persistence) — Validated in Phase 02
@@ -61,7 +61,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - Text insertion: clipboard + CGEvent Cmd+V (transcription persists on clipboard, TransientType marker hides from clipboard managers)
 - Hotkey detection: dual approach (NSEvent flagsChanged + CGEventTap backup)
 - App exclusion: AppExclusionService with NSMetadataQuery app discovery, manual exclusion set, fullscreen/borderless detection via CGWindowListCopyWindowInfo, ExclusionSettingsTab in Settings
-- Reference design: Wispr Flow's "Flow Bar" — small pill overlay, soft neutrals, editorial aesthetic
+- Reference design: Glaido's "Flow Bar" — small pill overlay, soft neutrals, editorial aesthetic
 - Target palette: deep navy background, vibrant blue accent, soft blue-white highlights
 
 ## Constraints
@@ -69,14 +69,14 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - **Platform**: macOS only (SwiftUI)
 - **Permissions**: Requires Microphone, Accessibility, and Input Monitoring
 - **API**: OpenAI Whisper API (requires user's API key)
-- **Design reference**: Wispr Flow aesthetic adapted to blue palette
+- **Design reference**: Glaido aesthetic adapted to blue palette
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Blue palette over black/beige | User preference; blue is universally appealing and distinct from Wispr Flow | — Pending |
-| Wispr Flow as design reference | Best-in-class UX for push-to-talk dictation apps | — Pending |
+| Blue palette over black/beige | User preference; blue is universally appealing and distinct from Glaido | — Pending |
+| Glaido as design reference | Best-in-class UX for push-to-talk dictation apps | — Pending |
 | Game exclusion via app detection | User plays League of Legends; accidental Fn triggers during gaming | Shipped Phase 04 |
 | Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | Shipped Phase 02 |
 
