@@ -20,6 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let audioRecorder = AudioRecorder()
     let whisperService = WhisperService()
     let textInserter = TextInserter()
+    let exclusionService = AppExclusionService()
     
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
@@ -144,6 +145,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func startRecording() {
         guard appState.phase != .recording else { return }
+        guard !exclusionService.shouldSuppressHotkey() else {
+            // Silently suppress — no sound, no overlay
+            return
+        }
 
         appState.phase = .recording
         appState.errorMessage = nil
@@ -355,6 +360,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             let settingsView = SettingsView()
                 .environmentObject(appState)
+                .environmentObject(exclusionService)
             
             settingsWindow = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 500, height: 450),
