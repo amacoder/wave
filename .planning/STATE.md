@@ -4,7 +4,7 @@ milestone: v1.1
 milestone_name: UI Revamp & Polish
 status: unknown
 stopped_at: Completed quick-260326-p3m (Smart Cleanup post-processing)
-last_updated: "2026-03-26T17:09:22.848Z"
+last_updated: "2026-03-26T18:10:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -86,6 +86,12 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 None yet.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260326-p3m | Add GPT-4o-mini text cleanup post-processing | 2026-03-26 | c41a72a | [260326-p3m-add-gpt-4o-mini-text-cleanup-post-proces](./quick/260326-p3m-add-gpt-4o-mini-text-cleanup-post-proces/) |
 
 ### Blockers/Concerns
 
