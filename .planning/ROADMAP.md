@@ -26,7 +26,7 @@ v1.1 builds four capabilities on top of the working v1.0 foundation: a design sy
   2. All UI references a DesignSystem.swift constants file for deep navy, vibrant blue, and soft blue-white colors rather than hardcoded hex values
   3. CGEventTap health is checked every 2 seconds and the menu bar icon reflects a degraded state if the tap cannot be re-enabled
   4. SwiftUI animations on the overlay do not execute while the overlay window is hidden (verified via Activity Monitor CPU at <1% between sessions)
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 01-01-PLAN.md — RecordingPhase enum + CGEventTap health monitoring
 - [ ] 01-02-PLAN.md — DesignSystem tokens + animation phase gating
@@ -69,7 +69,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Planning complete | - |
+| 1. Foundation | 1/2 | In Progress|  |
 | 2. Clipboard Persistence | 0/TBD | Not started | - |
 | 3. Overlay Redesign | 0/TBD | Not started | - |
 | 4. App Exclusion | 0/TBD | Not started | - |
