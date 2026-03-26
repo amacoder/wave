@@ -19,6 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let hotkeyManager = HotkeyManager()
     let audioRecorder = AudioRecorder()
     let whisperService = WhisperService()
+    let cleanupService = TextCleanupService()
     let textInserter = TextInserter()
     let exclusionService = AppExclusionService()
     
@@ -54,7 +55,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Flow Speech")
+            if let menuBarIcon = NSImage(named: "MenuBarIcon") {
+                menuBarIcon.isTemplate = true
+                button.image = menuBarIcon
+            } else {
+                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Wave")
+            }
         }
         
         // Build simple menu
@@ -63,7 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit Flow Speech", action: #selector(quitApp), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit Wave", action: #selector(quitApp), keyEquivalent: "q"))
         
         statusItem.menu = menu
     }
@@ -228,10 +234,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             )
             
             print("Transcription successful: \(transcription)")
-            
+
+            // Post-process: run Smart Cleanup via GPT-4o-mini if enabled
+            var finalText = transcription
+            if appState.smartCleanup {
+                print("Running Smart Cleanup via GPT-4o-mini...")
+                finalText = await cleanupService.cleanup(text: transcription, apiKey: apiKey)
+                print("Cleanup result: \(finalText)")
+            }
+
             await MainActor.run {
                 print("MainActor block running, autoInsertText: \(appState.autoInsertText)")
-                appState.lastTranscription = transcription
+                appState.lastTranscription = finalText
                 appState.phase = .done
 
                 // Show done flash for 0.8s, then hide overlay
@@ -250,7 +264,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if appState.autoInsertText {
                     print("Inserting text at cursor (after delay)...")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
-                        textInserter.insertText(transcription)
+                        textInserter.insertText(finalText)
                         print("Text insertion completed")
                         // Play success sound
                         NSSound(named: "Glass")?.play()
@@ -285,7 +299,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 .environmentObject(appState)
 
             recordingWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 280, height: 52),
+                contentRect: NSRect(x: 0, y: 0, width: 120, height: 36),
                 styleMask: [.borderless],
                 backing: .buffered,
                 defer: false
@@ -301,10 +315,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Position pill at bottom-center on every show (fixes window resize not triggered)
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
-            let pillWidth: CGFloat = 280
-            let pillHeight: CGFloat = 52
+            let pillWidth: CGFloat = 120
+            let pillHeight: CGFloat = 36
             let x = screenFrame.midX - pillWidth / 2
-            let y = screenFrame.minY + 32  // 32pt above the Dock
+            let y = screenFrame.minY + 24  // just above the Dock
             recordingWindow?.setFrame(
                 NSRect(x: x, y: y, width: pillWidth, height: pillHeight),
                 display: true
@@ -326,7 +340,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let button = self.statusItem.button else { return }
             switch self.appState.phase {
             case .idle, .done:
-                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Flow Speech")
+                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Wave")
                 button.contentTintColor = nil
             case .recording:
                 button.image = NSImage(systemSymbolName: "mic.badge.plus", accessibilityDescription: "Recording")
@@ -363,12 +377,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 .environmentObject(exclusionService)
             
             settingsWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 500, height: 450),
+                contentRect: NSRect(x: 0, y: 0, width: 650, height: 450),
                 styleMask: [.titled, .closable],
                 backing: .buffered,
                 defer: false
             )
-            settingsWindow?.title = "Flow Speech Settings"
+            settingsWindow?.title = "Wave Settings"
             settingsWindow?.contentView = NSHostingView(rootView: settingsView)
             settingsWindow?.center()
         }
@@ -391,7 +405,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Welcome to Flow Speech"
+        window.title = "Welcome to Wave"
         window.contentView = NSHostingView(rootView: onboardingView)
         window.center()
         window.makeKeyAndOrderFront(nil)
