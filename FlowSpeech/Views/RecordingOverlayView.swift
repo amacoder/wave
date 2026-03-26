@@ -9,9 +9,9 @@ import SwiftUI
 
 struct RecordingOverlayView: View {
     @EnvironmentObject var appState: AppState
-    
+
     @State private var pulseAnimation = false
-    
+
     var body: some View {
         VStack(spacing: 12) {
             if appState.isTranscribing {
@@ -36,9 +36,23 @@ struct RecordingOverlayView: View {
                     lineWidth: 1
                 )
         )
+        .onChange(of: appState.phase) { _, newPhase in
+            if newPhase == .recording {
+                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                    pulseAnimation = true
+                }
+            } else {
+                withAnimation(.linear(duration: 0)) {
+                    pulseAnimation = false
+                }
+            }
+        }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                pulseAnimation = true
+            // Handle case where view appears already in recording phase
+            if appState.phase == .recording {
+                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                    pulseAnimation = true
+                }
             }
         }
     }
@@ -49,7 +63,7 @@ struct RecordingOverlayView: View {
 struct RecordingView: View {
     let audioLevels: [Float]
     @Binding var isAnimating: Bool
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // Recording indicator
@@ -58,22 +72,22 @@ struct RecordingView: View {
                     .fill(Color.red.opacity(0.2))
                     .frame(width: 40, height: 40)
                     .scaleEffect(isAnimating ? 1.2 : 1.0)
-                
+
                 Circle()
                     .fill(Color.red)
                     .frame(width: 16, height: 16)
             }
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text("Recording...")
                     .font(.headline)
                     .foregroundColor(.primary)
-                
+
                 // Waveform
                 WaveformView(levels: audioLevels)
                     .frame(width: 100, height: 24)
             }
-            
+
             Text("ESC to cancel")
                 .font(.caption2)
                 .foregroundColor(.secondary)
@@ -90,8 +104,9 @@ struct RecordingView: View {
 // MARK: - Transcribing View
 
 struct TranscribingView: View {
+    @EnvironmentObject var appState: AppState
     @State private var rotation: Double = 0
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // Loading spinner
@@ -103,10 +118,28 @@ struct TranscribingView: View {
                 )
                 .frame(width: 24, height: 24)
                 .rotationEffect(.degrees(rotation))
-            
+
             Text("Transcribing...")
                 .font(.headline)
                 .foregroundColor(.primary)
+        }
+        .onChange(of: appState.phase) { _, newPhase in
+            if newPhase == .transcribing {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+            } else {
+                withAnimation(.linear(duration: 0)) {
+                    rotation = 0
+                }
+            }
+        }
+        .onAppear {
+            if appState.phase == .transcribing {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+            }
         }
     }
 }
@@ -118,17 +151,17 @@ struct WaveformView: View {
     let barCount = 15
     let minHeight: CGFloat = 2
     let maxHeight: CGFloat = 20
-    
+
     private func levelFor(index: Int) -> Float {
         guard !levels.isEmpty else { return 0 }
         let levelIndex = min(index * levels.count / barCount, levels.count - 1)
         return levels[levelIndex]
     }
-    
+
     private func heightFor(level: Float) -> CGFloat {
         return max(minHeight, CGFloat(level) * maxHeight)
     }
-    
+
     private var barGradient: LinearGradient {
         LinearGradient(
             colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal],
@@ -136,7 +169,7 @@ struct WaveformView: View {
             endPoint: .top
         )
     }
-    
+
     var body: some View {
         HStack(spacing: 2) {
             ForEach(0..<barCount, id: \.self) { index in
@@ -152,7 +185,7 @@ struct WaveformView: View {
 struct WaveformBar: View {
     let height: CGFloat
     let gradient: LinearGradient
-    
+
     var body: some View {
         RoundedRectangle(cornerRadius: 1)
             .fill(gradient)
@@ -164,43 +197,57 @@ struct WaveformBar: View {
 // MARK: - Alternative Waveform (Circular)
 
 struct CircularWaveformView: View {
+    @EnvironmentObject var appState: AppState
     let levels: [Float]
-    @State private var phase: Double = 0
-    
+    @State private var animationPhase: Double = 0
+
     private let gradient = Gradient(colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal])
     private let strokeStyle = StrokeStyle(lineWidth: 2, lineCap: .round)
-    
+
     var body: some View {
         Canvas { context, size in
             drawWaveform(context: context, size: size)
         }
+        .onChange(of: appState.phase) { _, newPhase in
+            if newPhase == .recording || newPhase == .transcribing {
+                withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+                    animationPhase = 2 * .pi
+                }
+            } else {
+                withAnimation(.linear(duration: 0)) {
+                    animationPhase = 0
+                }
+            }
+        }
         .onAppear {
-            withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
-                phase = 2 * .pi
+            if appState.phase == .recording || appState.phase == .transcribing {
+                withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+                    animationPhase = 2 * .pi
+                }
             }
         }
     }
-    
+
     private func drawWaveform(context: GraphicsContext, size: CGSize) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let radius = min(size.width, size.height) / 2 - 4
-        
+
         for i in 0..<levels.count {
             drawBar(context: context, index: i, center: center, radius: radius)
         }
     }
-    
+
     private func drawBar(context: GraphicsContext, index: Int, center: CGPoint, radius: CGFloat) {
-        let angleValue: CGFloat = (CGFloat(index) / CGFloat(levels.count)) * 2 * .pi - .pi / 2 + CGFloat(phase)
+        let angleValue: CGFloat = (CGFloat(index) / CGFloat(levels.count)) * 2 * .pi - .pi / 2 + CGFloat(animationPhase)
         let level = CGFloat(levels[index])
         let barLength = radius * 0.3 * level + 4
-        
+
         let startRadius = radius - barLength / 2
         let endRadius = radius + barLength / 2
-        
+
         let cosAngle = CoreGraphics.cos(angleValue)
         let sinAngle = CoreGraphics.sin(angleValue)
-        
+
         let start = CGPoint(
             x: center.x + startRadius * cosAngle,
             y: center.y + startRadius * sinAngle
@@ -209,11 +256,11 @@ struct CircularWaveformView: View {
             x: center.x + endRadius * cosAngle,
             y: center.y + endRadius * sinAngle
         )
-        
+
         var path = Path()
         path.move(to: start)
         path.addLine(to: end)
-        
+
         context.stroke(
             path,
             with: .linearGradient(gradient, startPoint: start, endPoint: end),
@@ -227,7 +274,7 @@ struct CircularWaveformView: View {
 struct FullScreenRecordingOverlay: View {
     @EnvironmentObject var appState: AppState
     @State private var showControls = true
-    
+
     var body: some View {
         ZStack {
             // Semi-transparent background
@@ -236,13 +283,13 @@ struct FullScreenRecordingOverlay: View {
                 .onTapGesture {
                     showControls.toggle()
                 }
-            
+
             // Center content
             VStack(spacing: 30) {
                 // Large waveform
                 CircularWaveformView(levels: appState.audioLevels)
                     .frame(width: 200, height: 200)
-                
+
                 if appState.isTranscribing {
                     Text("Transcribing...")
                         .font(.title2)
@@ -252,7 +299,7 @@ struct FullScreenRecordingOverlay: View {
                         .font(.title2)
                         .fontWeight(.medium)
                 }
-                
+
                 if showControls {
                     HStack(spacing: 20) {
                         Button(action: {

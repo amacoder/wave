@@ -123,7 +123,7 @@ struct ReadyStatusView: View {
 struct RecordingStatusView: View {
     @EnvironmentObject var appState: AppState
     @State private var pulse = false
-    
+
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
@@ -131,32 +131,46 @@ struct RecordingStatusView: View {
                     .fill(Color.red.opacity(0.2))
                     .frame(width: 50, height: 50)
                     .scaleEffect(pulse ? 1.2 : 1.0)
-                
+
                 Circle()
                     .fill(Color.red)
                     .frame(width: 20, height: 20)
             }
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-                    pulse = true
-                }
-            }
-            
+
             Text("Recording...")
                 .font(.headline)
                 .foregroundColor(.red)
-            
+
             // Mini waveform
             WaveformView(levels: appState.audioLevels)
                 .frame(width: 120, height: 20)
         }
         .padding(.vertical, 8)
+        .onChange(of: appState.phase) { _, newPhase in
+            if newPhase == .recording {
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulse = true
+                }
+            } else {
+                withAnimation(.linear(duration: 0)) {
+                    pulse = false
+                }
+            }
+        }
+        .onAppear {
+            if appState.phase == .recording {
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulse = true
+                }
+            }
+        }
     }
 }
 
 struct TranscribingStatusView: View {
+    @EnvironmentObject var appState: AppState
     @State private var rotation: Double = 0
-    
+
     var body: some View {
         VStack(spacing: 8) {
             Circle()
@@ -167,12 +181,30 @@ struct TranscribingStatusView: View {
                 )
                 .frame(width: 40, height: 40)
                 .rotationEffect(.degrees(rotation))
-            
+
             Text("Transcribing...")
                 .font(.headline)
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 8)
+        .onChange(of: appState.phase) { _, newPhase in
+            if newPhase == .transcribing {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+            } else {
+                withAnimation(.linear(duration: 0)) {
+                    rotation = 0
+                }
+            }
+        }
+        .onAppear {
+            if appState.phase == .transcribing {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    rotation = 360
+                }
+            }
+        }
     }
 }
 
