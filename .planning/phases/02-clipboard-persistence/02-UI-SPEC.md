@@ -42,15 +42,16 @@ Source: REQUIREMENTS.md — CLIP-01, CLIP-02, CLIP-03 are all behavioral require
 
 ## Spacing Scale
 
-No new spacing values are introduced in Phase 2. The existing scale is inherited for reference:
+No new spacing values are introduced in Phase 2. The existing declared design tokens are inherited for reference:
 
 | Token | Value | Usage |
 |-------|-------|-------|
 | xs | 4pt | Icon gaps, inline padding |
 | sm | 8pt | Compact element spacing |
 | md | 16pt | Default element spacing |
-| lg | 20pt | Overlay horizontal padding (RecordingOverlayView: `.padding(.horizontal, 20)`) |
 | xl | 24pt | Section padding |
+
+> **Note — raw codebase value:** `RecordingOverlayView` uses `.padding(.horizontal, 20)` — a hard-coded 20pt value that pre-dates the design system. This value is NOT a declared design token, is not included in the spacing scale above, and must not be reused or referenced as a token. It is an existing call-site detail that will be normalised in a future design-system cleanup phase.
 
 Exceptions: Touch targets not relevant — this is a macOS app with no new interactive hit targets in this phase.
 
@@ -136,7 +137,7 @@ No third-party dependencies. Phase 2 uses only `AppKit.NSPasteboard` (already im
 - [ ] Dimension 2 Visuals: PASS — no new visual surfaces
 - [ ] Dimension 3 Color: PASS — existing DesignSystem tokens inherited, none added
 - [ ] Dimension 4 Typography: PASS — existing type scale inherited, none added
-- [ ] Dimension 5 Spacing: PASS — existing spacing inherited, none added
+- [ ] Dimension 5 Spacing: PASS — existing declared tokens inherited (xs/sm/md/xl); raw 20pt call-site documented as non-token
 - [ ] Dimension 6 Registry Safety: PASS — no new dependencies
 
 **Approval:** pending
