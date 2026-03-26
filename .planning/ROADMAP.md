@@ -39,7 +39,9 @@ Plans:
   1. After dictating and pasting, the transcribed text is still available via Cmd+V (clipboard not restored to prior content)
   2. If the user copies something else during the paste window, their copy is preserved and the transcription restore is skipped
   3. Clipboard managers (e.g., Paste, Raycast clipboard history) do not record transcription content due to the TransientType marker
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Remove clipboard restore, add TransientType marker and changeCount guard
 
 ### Phase 3: Overlay Redesign
 **Goal**: The recording overlay is a polished pill shape at bottom-center with distinct visuals for all four states and smooth spring transitions between them
@@ -70,7 +72,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete   | 2026-03-26 |
-| 2. Clipboard Persistence | 0/TBD | Not started | - |
+| 2. Clipboard Persistence | 0/1 | Not started | - |
 | 3. Overlay Redesign | 0/TBD | Not started | - |
 | 4. App Exclusion | 0/TBD | Not started | - |
 
