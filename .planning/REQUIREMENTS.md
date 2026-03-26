@@ -16,10 +16,10 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 
 ### Overlay UI
 
-- [ ] **OVLAY-01**: Recording overlay is a pill shape positioned at bottom-center of screen
-- [ ] **OVLAY-02**: Overlay renders 4 distinct visual states (idle, recording, transcribing, done)
-- [ ] **OVLAY-03**: State transitions use spring animations with subtle fades
-- [ ] **OVLAY-04**: Waveform uses Canvas single-draw-pass instead of ForEach+bars
+- [x] **OVLAY-01**: Recording overlay is a pill shape positioned at bottom-center of screen
+- [x] **OVLAY-02**: Overlay renders 4 distinct visual states (idle, recording, transcribing, done)
+- [x] **OVLAY-03**: State transitions use spring animations with subtle fades
+- [x] **OVLAY-04**: Waveform uses Canvas single-draw-pass instead of ForEach+bars
 
 ### Clipboard
 
@@ -61,10 +61,10 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 | CLIP-01 | Phase 2 | Complete |
 | CLIP-02 | Phase 2 | Complete |
 | CLIP-03 | Phase 2 | Complete |
-| OVLAY-01 | Phase 3 | Pending |
-| OVLAY-02 | Phase 3 | Pending |
-| OVLAY-03 | Phase 3 | Pending |
-| OVLAY-04 | Phase 3 | Pending |
+| OVLAY-01 | Phase 3 | Complete |
+| OVLAY-02 | Phase 3 | Complete |
+| OVLAY-03 | Phase 3 | Complete |
+| OVLAY-04 | Phase 3 | Complete |
 | EXCL-01 | Phase 4 | Pending |
 | EXCL-02 | Phase 4 | Pending |
 | EXCL-03 | Phase 4 | Pending |

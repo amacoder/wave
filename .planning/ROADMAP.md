@@ -12,7 +12,7 @@ v1.1 builds four capabilities on top of the working v1.0 foundation: a design sy
 
 - [x] **Phase 1: Foundation** - RecordingPhase enum, design tokens, CGEventTap health, animation gating (completed 2026-03-26)
 - [x] **Phase 2: Clipboard Persistence** - Fix clipboard restore bug, add changeCount guard and TransientType marker (completed 2026-03-26)
-- [ ] **Phase 3: Overlay Redesign** - Pill shape, 4-state rendering, spring animations, Canvas waveform
+- [x] **Phase 3: Overlay Redesign** - Pill shape, 4-state rendering, spring animations, Canvas waveform (completed 2026-03-26)
 - [ ] **Phase 4: App Exclusion** - Installed apps picker, fullscreen detection, Exclusion settings tab
 
 ## Phase Details
@@ -52,7 +52,7 @@ Plans:
   2. Each of the four states (idle, recording, transcribing, done) renders a visually distinct appearance — a human observer can identify the current state without any other information
   3. Transitions between states use spring animations with no abrupt cuts or layout jumps
   4. The waveform renders using a Canvas single-draw-pass and the overlay window disappears after a 0.8s done-state flash
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 03-01-PLAN.md — Pill overlay rewrite with 4-state ZStack, Canvas waveform, spring transitions, and done-flash timing
 
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete   | 2026-03-26 |
 | 2. Clipboard Persistence | 1/1 | Complete    | 2026-03-26 |
-| 3. Overlay Redesign | 0/1 | Planning complete | - |
+| 3. Overlay Redesign | 1/1 | Complete   | 2026-03-26 |
 | 4. App Exclusion | 0/TBD | Not started | - |
 
 ---

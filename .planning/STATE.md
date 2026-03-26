@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Revamp & Polish
 status: unknown
-stopped_at: Completed 02-01-PLAN.md (clipboard persistence)
-last_updated: "2026-03-26T14:26:42.992Z"
+stopped_at: "Checkpoint Task 3: 03-01-PLAN.md human-verify"
+last_updated: "2026-03-26T15:05:21.270Z"
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Hold a key, speak, and have accurate text appear where you need it — zero friction dictation.
-**Current focus:** Phase 02 — clipboard-persistence
+**Current focus:** Phase 03 — overlay-redesign
 
 ## Current Position
 
-Phase: 02 (clipboard-persistence) — COMPLETE
-Plan: 1 of 1 (done)
+Phase: 03 (overlay-redesign) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Plan: 1 of 1 (done)
 *Updated after each plan completion*
 | Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
 | Phase 02-clipboard-persistence P01 | 10 | 2 tasks | 1 file |
+| Phase 03-overlay-redesign P01 | 12 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 - [02-01] Remove clipboard restore entirely — transcription stays on clipboard after paste so Cmd+V re-pastes it (CLIP-01)
 - [02-01] org.nspasteboard.TransientType marker with empty Data() in same clearContents transaction — excludes dictation from clipboard manager history (CLIP-03)
 - [02-01] changeCountAfterWrite snapshot kept as dormant dead code with restore-guard comment — wirable if a restore path is ever re-introduced (CLIP-02)
+- [Phase 03-01]: setFrame outside nil guard so pill repositions/resizes on every showRecordingOverlay() call
+- [Phase 03-01]: hideRecordingOverlay() delayed 0.8s after appState.phase = .done to show done-state checkmark flash
+- [Phase 03-01]: Canvas flat vibrantBlue fill (not gradient) for waveform bars per spec
+- [Phase 03-01]: ZIndex per ZStack branch to prevent crossfade drawing-order artifacts on spring transitions
 
 ### Pending Todos
 
@@ -84,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T14:30:00.000Z
-Stopped at: Completed 02-01-PLAN.md (clipboard persistence)
-Resume file: .planning/phases/02-clipboard-persistence/02-01-SUMMARY.md
+Last session: 2026-03-26T15:05:21.266Z
+Stopped at: Checkpoint Task 3: 03-01-PLAN.md human-verify
+Resume file: None
