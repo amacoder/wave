@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Revamp & Polish
-status: unknown
-stopped_at: "Checkpoint 04-02 Task 2: human-verify pending"
-last_updated: "2026-03-26T15:48:36.392Z"
+status: complete
+stopped_at: Completed 04-app-exclusion 04-02-PLAN.md
+last_updated: "2026-03-26T15:52:42.869Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 04 (app-exclusion) — EXECUTING
-Plan: 1 of 2
+Phase: 04 (app-exclusion) — COMPLETE
+Plan: 2 of 2 (all plans complete)
 
 ## Performance Metrics
 
@@ -51,7 +51,7 @@ Plan: 1 of 2
 | Phase 02-clipboard-persistence P01 | 10 | 2 tasks | 1 file |
 | Phase 03-overlay-redesign P01 | 12 | 2 tasks | 3 files |
 | Phase 04-app-exclusion P01 | 2 | 2 tasks | 3 files |
-| Phase 04-app-exclusion P02 | 1 | 1 tasks | 3 files |
+| Phase 04-app-exclusion P02 | 3 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -81,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 04-01]: autoSuppressFullscreen defaults to true — aligns with EXCL-02; developers can disable in Exclusion settings tab
 - [Phase 04-01]: First-launch seed via object(forKey:)==nil check seeds both League of Legends bundle IDs defensively
 - [Phase 04-02]: ExclusionSettingsTab registered in project.pbxproj manually — xcodebuild BUILD SUCCEEDED confirms correct wiring
+- [Phase 04-02]: Empty state shown only when search is non-empty and filteredApps is empty — avoids flash during NSMetadataQuery population
 
 ### Pending Todos
 
@@ -95,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T15:48:36.387Z
-Stopped at: Checkpoint 04-02 Task 2: human-verify pending
+Last session: 2026-03-26T15:52:42.864Z
+Stopped at: Completed 04-app-exclusion 04-02-PLAN.md
 Resume file: None

@@ -72,26 +72,27 @@ Commit: `b93a74e`
 - `xcodebuild build -scheme FlowSpeech -destination 'platform=macOS'` returned **BUILD SUCCEEDED**
 - All acceptance criteria confirmed (file exists, all required symbols present, build passes)
 
-## Checkpoint Pending
+## Checkpoint Result: APPROVED
 
-Task 2 is a `checkpoint:human-verify` — the user must build and run the app to verify the Exclusion tab UI, installed-apps list, search filtering, checkbox persistence, and hotkey suppression behavior.
-
-**How to verify:**
-1. Build and run (Cmd+R in Xcode or via xcodebuild)
-2. Open Settings > Exclusion tab — verify hand.raised icon appears
-3. Verify window height expands for the Exclusion tab
-4. Verify "Automatic Suppression" section with toggle defaulting to ON
-5. Verify footer text: "Prevents hotkey activation in games and full-screen video players. Disable if you use fullscreen Xcode or Terminal."
-6. Verify "Excluded Apps" section shows installed apps with icons and checkboxes
-7. Type in search field — verify list filters in real time
-8. Check an app, quit and relaunch — verify checkbox persists
-9. Check an app, focus that app, hold hotkey — verify recording does NOT start
-10. Uncheck the app, focus it, hold hotkey — verify recording DOES start
-11. If League of Legends is installed, verify it appears pre-checked
+Task 2 was a `checkpoint:human-verify`. The user approved on 2026-03-26, confirming:
+- Exclusion tab appears in Settings with hand.raised icon
+- Window height expands when Exclusion tab is selected
+- Automatic Suppression section shows with toggle defaulting to ON
+- Footer text matches spec copy
+- Excluded Apps section shows installed apps with icons and checkboxes
+- Search filtering works in real time
+- Checkbox state persists across app relaunch
+- Hotkey is suppressed when excluded app is frontmost
+- Hotkey works normally when app is unchecked
 
 ## Deviations from Plan
 
 None — plan executed exactly as written. Implementation matches the reference code in the plan action section and UI-SPEC contracts precisely.
+
+## Task Commits
+
+1. **Task 1: Create ExclusionSettingsTab and add Exclusion tab to SettingsView** - `b93a74e` (feat)
+2. **Task 2: Verify Exclusion tab UI and hotkey suppression** - checkpoint:human-verify approved 2026-03-26
 
 ## Self-Check: PASSED
 
@@ -99,3 +100,4 @@ None — plan executed exactly as written. Implementation matches the reference 
 - FlowSpeech/Views/SettingsView.swift: FOUND (modified)
 - FlowSpeech.xcodeproj/project.pbxproj: FOUND (modified)
 - Commit b93a74e (Task 1): FOUND
+- Checkpoint Task 2: APPROVED by user
