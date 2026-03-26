@@ -9,11 +9,13 @@
 ## Features
 
 - **Voice-to-text anywhere** — Works in any app, inserts text at cursor
-- **Smart Cleanup** — GPT-4o-mini removes filler words, fixes grammar and punctuation
+- **Smart Cleanup** — GPT-4o-mini removes filler words (um, uh, like, you know), fixes grammar and punctuation automatically
 - **Fast transcription** — Powered by OpenAI's GPT-4o Transcribe
-- **Global hotkey** — Hold Fn (or Caps Lock) to record, release to transcribe
+- **Clipboard persistence** — Transcription stays on your clipboard after paste, always available via Cmd+V
 - **App exclusion** — Automatically suppresses hotkey in games and fullscreen apps
-- **Live waveform** — Compact overlay pill with visual feedback
+- **Global hotkey** — Hold Fn (or Caps Lock) to record, release to transcribe
+- **Compact overlay** — Minimal pill with waveform, sits above the dock
+- **Sidebar settings** — Clean, organized preferences with 6 tabs
 - **Secure** — API key stored in macOS Keychain
 - **100+ languages** — Auto-detect or choose your language
 
@@ -92,8 +94,8 @@ FlowSpeech/
 ├── AppDelegate.swift             # Menu bar, hotkeys, orchestration
 ├── DesignSystem.swift            # Amber/yellow palette tokens
 ├── Views/
-│   ├── SettingsView.swift        # Sidebar settings (Stash-style)
-│   ├── RecordingOverlayView.swift # Compact pill overlay (Glaido-style)
+│   ├── SettingsView.swift        # Sidebar settings
+│   ├── RecordingOverlayView.swift # Compact pill overlay
 │   ├── ExclusionSettingsTab.swift # App exclusion UI
 │   ├── OnboardingView.swift      # First-run wizard
 │   └── MenuBarPopoverView.swift  # Quick access menu
@@ -142,6 +144,56 @@ System Settings → Keyboard → Modifier Keys → Set Caps Lock to "No Action"
 - **API key:** Stored locally in macOS Keychain, never transmitted except to OpenAI
 - **Audio:** Sent to OpenAI for transcription, not stored locally after processing
 - **No telemetry:** Wave doesn't collect any usage data
+
+## Changelog
+
+### v1.1 — UI Revamp & Polish (2026-03-26)
+
+**Rebrand**
+- Renamed from FlowSpeech to **Wave**
+- New amber/yellow color palette and custom wave app icon
+- Programmatic wave icon in menu bar (turns amber when recording)
+
+**Smart Cleanup (New)**
+- GPT-4o-mini post-processing removes filler words (um, uh, like, you know, basically, literally)
+- Fixes grammar and punctuation while preserving meaning
+- Toggle on/off in Settings → Transcription
+
+**Transcription Upgrade**
+- Added GPT-4o Transcribe model (best quality, same price as Whisper-1)
+- Added GPT-4o Mini Transcribe (half price, still good)
+- Whisper-1 kept as legacy option
+- Updated model comparison in Settings
+
+**UI Overhaul**
+- Sidebar settings layout (inspired by Stash) replacing dropdown tab bar
+- Compact recording overlay pill (inspired by Glaido) — icon + waveform only, no text
+- Recording overlay sits just above the dock
+
+**Clipboard Persistence**
+- Transcription stays on clipboard after paste
+- Always available via Cmd+V even if no text field was focused
+
+**App Exclusion**
+- Exclude specific apps from triggering dictation (e.g., games)
+- Auto-suppress hotkey in fullscreen and borderless-windowed apps
+- Searchable installed apps list with icons and checkboxes in Settings
+- League of Legends pre-excluded by default
+
+**Foundation**
+- Centralized design system with amber palette tokens
+- Smooth spring animations across all state transitions
+- CGEventTap health monitoring with auto-recovery
+
+### v1.0 — Initial Release
+
+- Hold-to-record voice dictation with Whisper API
+- Auto-paste transcription to active text field
+- 5 hotkey options (Fn, Caps Lock, Option+Space, Control+Space)
+- Onboarding wizard
+- Keychain-secured API key storage
+- Menu bar integration
+- 100+ language support
 
 ## License
 
