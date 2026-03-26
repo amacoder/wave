@@ -64,7 +64,10 @@ Plans:
   1. User can open Settings, navigate to an Exclusion tab, browse installed apps with a search field, and toggle exclusion via checkboxes — no manual bundle ID entry required
   2. Holding the hotkey while a manually excluded app (e.g., League of Legends) is in focus does not start recording
   3. Holding the hotkey while any fullscreen or borderless-windowed app is focused does not start recording (when auto-suppress toggle is enabled)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 04-01-PLAN.md — AppExclusionService with suppression logic, fullscreen detection, and hotkey guard wiring
+- [ ] 04-02-PLAN.md — ExclusionSettingsTab UI with installed apps picker, search, checkboxes, and visual verification
 
 ## Progress
 
@@ -76,7 +79,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 2/2 | Complete   | 2026-03-26 |
 | 2. Clipboard Persistence | 1/1 | Complete    | 2026-03-26 |
 | 3. Overlay Redesign | 1/1 | Complete   | 2026-03-26 |
-| 4. App Exclusion | 0/TBD | Not started | - |
+| 4. App Exclusion | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-03-26*
