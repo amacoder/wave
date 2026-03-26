@@ -52,7 +52,7 @@ struct OnboardingView: View {
             HStack(spacing: 8) {
                 ForEach(0..<steps.count, id: \.self) { index in
                     Circle()
-                        .fill(index <= currentStep ? Color(hex: "2563EB") : Color.gray.opacity(0.3))
+                        .fill(index <= currentStep ? DesignSystem.Colors.vibrantBlue : Color.gray.opacity(0.3))
                         .frame(width: 8, height: 8)
                         .animation(.easeInOut, value: currentStep)
                 }
@@ -69,7 +69,7 @@ struct OnboardingView: View {
                     .font(.system(size: 64))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
+                            colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -117,7 +117,7 @@ struct OnboardingView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Color(hex: "2563EB"))
+                    .tint(DesignSystem.Colors.vibrantBlue)
                 } else {
                     Button("Get Started") {
                         onComplete()
@@ -125,7 +125,7 @@ struct OnboardingView: View {
                         NSApplication.shared.keyWindow?.close()
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Color(hex: "0D9488"))
+                    .tint(DesignSystem.Colors.teal)
                 }
             }
             .padding(30)
@@ -233,7 +233,7 @@ struct HotkeyOptionButton: View {
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(Color(hex: "2563EB"))
+                        .foregroundColor(DesignSystem.Colors.vibrantBlue)
                 }
             }
             .padding(.horizontal, 16)
@@ -241,11 +241,11 @@ struct HotkeyOptionButton: View {
             .frame(width: 320)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? Color(hex: "2563EB").opacity(0.1) : Color.gray.opacity(0.1))
+                    .fill(isSelected ? DesignSystem.Colors.vibrantBlue.opacity(0.1) : Color.gray.opacity(0.1))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color(hex: "2563EB") : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? DesignSystem.Colors.vibrantBlue : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)

@@ -98,20 +98,11 @@ struct TranscribingView: View {
             Circle()
                 .trim(from: 0, to: 0.7)
                 .stroke(
-                    LinearGradient(
-                        colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
+                    DesignSystem.Colors.accentGradient,
                     style: StrokeStyle(lineWidth: 3, lineCap: .round)
                 )
                 .frame(width: 24, height: 24)
                 .rotationEffect(.degrees(rotation))
-                .onAppear {
-                    withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                        rotation = 360
-                    }
-                }
             
             Text("Transcribing...")
                 .font(.headline)
@@ -140,7 +131,7 @@ struct WaveformView: View {
     
     private var barGradient: LinearGradient {
         LinearGradient(
-            colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
+            colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal],
             startPoint: .bottom,
             endPoint: .top
         )
@@ -176,7 +167,7 @@ struct CircularWaveformView: View {
     let levels: [Float]
     @State private var phase: Double = 0
     
-    private let gradient = Gradient(colors: [Color(hex: "2563EB"), Color(hex: "0D9488")])
+    private let gradient = Gradient(colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal])
     private let strokeStyle = StrokeStyle(lineWidth: 2, lineCap: .round)
     
     var body: some View {

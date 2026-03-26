@@ -19,6 +19,7 @@
 		A10000010000000000000010 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000010 /* OnboardingView.swift */; };
 		A10000010000000000000011 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000011 /* MenuBarPopoverView.swift */; };
 		A10000010000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000012 /* Assets.xcassets */; };
+		A10000010000000000000013 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000015 /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A10000020000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000020000000000000013 /* FlowSpeech.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlowSpeech.entitlements; sourceTree = "<group>"; };
 		A10000020000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000020000000000000015 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A10000030000000000000001 /* FlowSpeech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlowSpeech.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -63,6 +65,7 @@
 			children = (
 				A10000020000000000000001 /* FlowSpeechApp.swift */,
 				A10000020000000000000002 /* AppDelegate.swift */,
+				A10000020000000000000015 /* DesignSystem.swift */,
 				A10000050000000000000003 /* Services */,
 				A10000050000000000000004 /* Views */,
 				A10000050000000000000005 /* Resources */,
@@ -182,6 +185,7 @@
 			files = (
 				A10000010000000000000001 /* FlowSpeechApp.swift in Sources */,
 				A10000010000000000000002 /* AppDelegate.swift in Sources */,
+				A10000010000000000000013 /* DesignSystem.swift in Sources */,
 				A10000010000000000000003 /* AudioRecorder.swift in Sources */,
 				A10000010000000000000004 /* WhisperService.swift in Sources */,
 				A10000010000000000000005 /* KeychainManager.swift in Sources */,
@@ -322,7 +326,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 479DN3M784;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FlowSpeech/Info.plist;
@@ -335,6 +339,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.flowspeech.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -352,7 +357,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 479DN3M784;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FlowSpeech/Info.plist;
@@ -365,6 +370,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.flowspeech.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";

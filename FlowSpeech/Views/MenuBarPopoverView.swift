@@ -15,13 +15,7 @@ struct MenuBarPopoverView: View {
             // Header
             HStack {
                 Image(systemName: "mic.fill")
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundStyle(DesignSystem.Colors.accentGradient)
                 Text("Flow Speech")
                     .font(.headline)
                 Spacer()
@@ -168,20 +162,11 @@ struct TranscribingStatusView: View {
             Circle()
                 .trim(from: 0, to: 0.7)
                 .stroke(
-                    LinearGradient(
-                        colors: [Color(hex: "2563EB"), Color(hex: "0D9488")],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
+                    DesignSystem.Colors.accentGradient,
                     style: StrokeStyle(lineWidth: 4, lineCap: .round)
                 )
                 .frame(width: 40, height: 40)
                 .rotationEffect(.degrees(rotation))
-                .onAppear {
-                    withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                        rotation = 360
-                    }
-                }
             
             Text("Transcribing...")
                 .font(.headline)
