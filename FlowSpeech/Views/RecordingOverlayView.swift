@@ -2,114 +2,148 @@
 //  RecordingOverlayView.swift
 //  FlowSpeech
 //
-//  Floating recording indicator with waveform
+//  Pill overlay with 4-state ZStack, Canvas waveform, and spring transitions
 //
 
 import SwiftUI
 
 struct RecordingOverlayView: View {
     @EnvironmentObject var appState: AppState
-
-    @State private var pulseAnimation = false
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var spinnerRotation: Double = 0
 
     var body: some View {
-        VStack(spacing: 12) {
-            if appState.isTranscribing {
-                // Transcribing state
-                TranscribingView()
-            } else {
-                // Recording state
-                RecordingView(audioLevels: appState.audioLevels, isAnimating: $pulseAnimation)
+        ZStack {
+            if appState.phase == .idle {
+                idleState
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(appState.phase == .idle ? 1 : 0)
+            } else if appState.phase == .recording {
+                recordingState
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(appState.phase == .recording ? 1 : 0)
+            } else if appState.phase == .transcribing {
+                transcribingState
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(appState.phase == .transcribing ? 1 : 0)
+            } else if appState.phase == .done {
+                doneState
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    .zIndex(appState.phase == .done ? 1 : 0)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .frame(width: 280, height: 52)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            Capsule()
+                .fill(DesignSystem.Colors.deepNavy.opacity(0.92))
+                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 6)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(
-                    appState.isRecording ? Color.red.opacity(0.5) : Color.blue.opacity(0.3),
-                    lineWidth: 1
-                )
-        )
+        .clipShape(Capsule())
+        .animation(.spring(duration: 0.35, bounce: 0.1), value: appState.phase)
         .onChange(of: appState.phase) { _, newPhase in
+            // Phase-gated animations (FNDTN-04 pattern)
             if newPhase == .recording {
-                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                    pulseAnimation = true
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulseScale = 1.3
                 }
             } else {
                 withAnimation(.linear(duration: 0)) {
-                    pulseAnimation = false
+                    pulseScale = 1.0
+                }
+            }
+
+            if newPhase == .transcribing {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    spinnerRotation = 360
+                }
+            } else {
+                withAnimation(.linear(duration: 0)) {
+                    spinnerRotation = 0
                 }
             }
         }
         .onAppear {
-            // Handle case where view appears already in recording phase
             if appState.phase == .recording {
-                withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
-                    pulseAnimation = true
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulseScale = 1.3
+                }
+            }
+            if appState.phase == .transcribing {
+                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                    spinnerRotation = 360
                 }
             }
         }
     }
-}
 
-// MARK: - Recording View
+    // MARK: - Idle State
 
-struct RecordingView: View {
-    let audioLevels: [Float]
-    @Binding var isAnimating: Bool
+    private var idleState: some View {
+        HStack {
+            Image(systemName: "mic")
+                .font(.system(size: 16))
+                .foregroundColor(DesignSystem.Colors.softBlueWhite.opacity(0.5))
+        }
+    }
 
-    var body: some View {
-        HStack(spacing: 16) {
-            // Recording indicator
+    // MARK: - Recording State
+
+    private var recordingState: some View {
+        HStack(spacing: 8) {
+            // Pulsing recording indicator
             ZStack {
                 Circle()
                     .fill(Color.red.opacity(0.2))
-                    .frame(width: 40, height: 40)
-                    .scaleEffect(isAnimating ? 1.2 : 1.0)
-
+                    .frame(width: 32, height: 32)
+                    .scaleEffect(pulseScale)
                 Circle()
                     .fill(Color.red)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 12, height: 12)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Recording...")
-                    .font(.headline)
-                    .foregroundColor(.primary)
+            Text("Recording...")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(DesignSystem.Colors.softBlueWhite)
 
-                // Waveform
-                WaveformView(levels: audioLevels)
-                    .frame(width: 100, height: 24)
+            // Canvas waveform
+            Canvas { context, size in
+                let levels = appState.audioLevels
+                let count = levels.count
+                guard count > 0 else { return }
+                let gap: CGFloat = 2
+                let barWidth: CGFloat = (size.width - gap * CGFloat(count - 1)) / CGFloat(count)
+
+                for (i, level) in levels.enumerated() {
+                    let barHeight = max(3, CGFloat(level) * size.height)
+                    let x = CGFloat(i) * (barWidth + gap)
+                    let y = (size.height - barHeight) / 2
+                    let rect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
+                    context.fill(
+                        Path(roundedRect: rect, cornerRadius: 2),
+                        with: .color(DesignSystem.Colors.vibrantBlue)
+                    )
+                }
             }
+            .frame(width: 80, height: 24)
 
             Text("ESC to cancel")
                 .font(.caption2)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .foregroundColor(DesignSystem.Colors.softBlueWhite.opacity(0.6))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(
                     Capsule()
-                        .fill(Color.secondary.opacity(0.2))
+                        .fill(DesignSystem.Colors.softBlueWhite.opacity(0.1))
                 )
         }
+        .padding(.horizontal, 16)
     }
-}
 
-// MARK: - Transcribing View
+    // MARK: - Transcribing State
 
-struct TranscribingView: View {
-    @EnvironmentObject var appState: AppState
-    @State private var rotation: Double = 0
-
-    var body: some View {
-        HStack(spacing: 16) {
-            // Loading spinner
+    private var transcribingState: some View {
+        HStack(spacing: 8) {
             Circle()
                 .trim(from: 0, to: 0.7)
                 .stroke(
@@ -117,207 +151,22 @@ struct TranscribingView: View {
                     style: StrokeStyle(lineWidth: 3, lineCap: .round)
                 )
                 .frame(width: 24, height: 24)
-                .rotationEffect(.degrees(rotation))
+                .rotationEffect(.degrees(spinnerRotation))
 
             Text("Transcribing...")
-                .font(.headline)
-                .foregroundColor(.primary)
-        }
-        .onChange(of: appState.phase) { _, newPhase in
-            if newPhase == .transcribing {
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
-            } else {
-                withAnimation(.linear(duration: 0)) {
-                    rotation = 0
-                }
-            }
-        }
-        .onAppear {
-            if appState.phase == .transcribing {
-                withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Waveform View
-
-struct WaveformView: View {
-    let levels: [Float]
-    let barCount = 15
-    let minHeight: CGFloat = 2
-    let maxHeight: CGFloat = 20
-
-    private func levelFor(index: Int) -> Float {
-        guard !levels.isEmpty else { return 0 }
-        let levelIndex = min(index * levels.count / barCount, levels.count - 1)
-        return levels[levelIndex]
-    }
-
-    private func heightFor(level: Float) -> CGFloat {
-        return max(minHeight, CGFloat(level) * maxHeight)
-    }
-
-    private var barGradient: LinearGradient {
-        LinearGradient(
-            colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal],
-            startPoint: .bottom,
-            endPoint: .top
-        )
-    }
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<barCount, id: \.self) { index in
-                WaveformBar(
-                    height: heightFor(level: levelFor(index: index)),
-                    gradient: barGradient
-                )
-            }
-        }
-    }
-}
-
-struct WaveformBar: View {
-    let height: CGFloat
-    let gradient: LinearGradient
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 1)
-            .fill(gradient)
-            .frame(width: 3, height: height)
-            .animation(.easeOut(duration: 0.05), value: height)
-    }
-}
-
-// MARK: - Alternative Waveform (Circular)
-
-struct CircularWaveformView: View {
-    @EnvironmentObject var appState: AppState
-    let levels: [Float]
-    @State private var animationPhase: Double = 0
-
-    private let gradient = Gradient(colors: [DesignSystem.Colors.vibrantBlue, DesignSystem.Colors.teal])
-    private let strokeStyle = StrokeStyle(lineWidth: 2, lineCap: .round)
-
-    var body: some View {
-        Canvas { context, size in
-            drawWaveform(context: context, size: size)
-        }
-        .onChange(of: appState.phase) { _, newPhase in
-            if newPhase == .recording || newPhase == .transcribing {
-                withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
-                    animationPhase = 2 * .pi
-                }
-            } else {
-                withAnimation(.linear(duration: 0)) {
-                    animationPhase = 0
-                }
-            }
-        }
-        .onAppear {
-            if appState.phase == .recording || appState.phase == .transcribing {
-                withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
-                    animationPhase = 2 * .pi
-                }
-            }
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(DesignSystem.Colors.softBlueWhite)
         }
     }
 
-    private func drawWaveform(context: GraphicsContext, size: CGSize) {
-        let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        let radius = min(size.width, size.height) / 2 - 4
+    // MARK: - Done State
 
-        for i in 0..<levels.count {
-            drawBar(context: context, index: i, center: center, radius: radius)
-        }
-    }
-
-    private func drawBar(context: GraphicsContext, index: Int, center: CGPoint, radius: CGFloat) {
-        let angleValue: CGFloat = (CGFloat(index) / CGFloat(levels.count)) * 2 * .pi - .pi / 2 + CGFloat(animationPhase)
-        let level = CGFloat(levels[index])
-        let barLength = radius * 0.3 * level + 4
-
-        let startRadius = radius - barLength / 2
-        let endRadius = radius + barLength / 2
-
-        let cosAngle = CoreGraphics.cos(angleValue)
-        let sinAngle = CoreGraphics.sin(angleValue)
-
-        let start = CGPoint(
-            x: center.x + startRadius * cosAngle,
-            y: center.y + startRadius * sinAngle
-        )
-        let end = CGPoint(
-            x: center.x + endRadius * cosAngle,
-            y: center.y + endRadius * sinAngle
-        )
-
-        var path = Path()
-        path.move(to: start)
-        path.addLine(to: end)
-
-        context.stroke(
-            path,
-            with: .linearGradient(gradient, startPoint: start, endPoint: end),
-            style: strokeStyle
-        )
-    }
-}
-
-// MARK: - Full Screen Recording Overlay (Alternative)
-
-struct FullScreenRecordingOverlay: View {
-    @EnvironmentObject var appState: AppState
-    @State private var showControls = true
-
-    var body: some View {
-        ZStack {
-            // Semi-transparent background
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    showControls.toggle()
-                }
-
-            // Center content
-            VStack(spacing: 30) {
-                // Large waveform
-                CircularWaveformView(levels: appState.audioLevels)
-                    .frame(width: 200, height: 200)
-
-                if appState.isTranscribing {
-                    Text("Transcribing...")
-                        .font(.title2)
-                        .fontWeight(.medium)
-                } else {
-                    Text("Listening...")
-                        .font(.title2)
-                        .fontWeight(.medium)
-                }
-
-                if showControls {
-                    HStack(spacing: 20) {
-                        Button(action: {
-                            // Cancel action would be triggered by AppDelegate
-                        }) {
-                            Label("Cancel", systemImage: "xmark.circle.fill")
-                                .font(.headline)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(Capsule().fill(Color.red.opacity(0.8)))
-                                .foregroundColor(.white)
-                        }
-                        .buttonStyle(.plain)
-                        .keyboardShortcut(.escape, modifiers: [])
-                    }
-                }
-            }
-            .foregroundColor(.white)
+    private var doneState: some View {
+        HStack {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(DesignSystem.Colors.softBlueWhite)
         }
     }
 }
@@ -325,13 +174,6 @@ struct FullScreenRecordingOverlay: View {
 #Preview("Recording Overlay") {
     RecordingOverlayView()
         .environmentObject(AppState())
-        .frame(width: 300, height: 100)
+        .padding(40)
         .background(Color.gray.opacity(0.3))
-}
-
-#Preview("Waveform") {
-    WaveformView(levels: (0..<30).map { _ in Float.random(in: 0.1...1.0) })
-        .frame(width: 150, height: 30)
-        .padding()
-        .background(Color.black.opacity(0.8))
 }

@@ -141,9 +141,25 @@ struct RecordingStatusView: View {
                 .font(.headline)
                 .foregroundColor(.red)
 
-            // Mini waveform
-            WaveformView(levels: appState.audioLevels)
-                .frame(width: 120, height: 20)
+            // Mini waveform (Canvas single-pass)
+            Canvas { context, size in
+                let levels = appState.audioLevels
+                let count = levels.count
+                guard count > 0 else { return }
+                let gap: CGFloat = 2
+                let barWidth: CGFloat = (size.width - gap * CGFloat(count - 1)) / CGFloat(count)
+                for (i, level) in levels.enumerated() {
+                    let barHeight = max(2, CGFloat(level) * size.height)
+                    let x = CGFloat(i) * (barWidth + gap)
+                    let y = (size.height - barHeight) / 2
+                    let rect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
+                    context.fill(
+                        Path(roundedRect: rect, cornerRadius: 1),
+                        with: .color(DesignSystem.Colors.vibrantBlue)
+                    )
+                }
+            }
+            .frame(width: 120, height: 20)
         }
         .padding(.vertical, 8)
         .onChange(of: appState.phase) { _, newPhase in
