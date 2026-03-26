@@ -10,9 +10,9 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 ### Foundation
 
 - [x] **FNDTN-01**: App uses a RecordingPhase enum (idle/recording/transcribing/done) instead of dual booleans
-- [ ] **FNDTN-02**: App has centralized blue design tokens (deep navy, vibrant blue, soft blue-white)
+- [x] **FNDTN-02**: App has centralized blue design tokens (deep navy, vibrant blue, soft blue-white)
 - [x] **FNDTN-03**: CGEventTap health is verified periodically and re-enabled if silently disabled
-- [ ] **FNDTN-04**: SwiftUI animations stop when overlay window is hidden
+- [x] **FNDTN-04**: SwiftUI animations stop when overlay window is hidden
 
 ### Overlay UI
 
@@ -55,9 +55,9 @@ Requirements for UI Revamp & Polish milestone. Each maps to roadmap phases.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FNDTN-01 | Phase 1 | Complete |
-| FNDTN-02 | Phase 1 | Pending |
+| FNDTN-02 | Phase 1 | Complete |
 | FNDTN-03 | Phase 1 | Complete |
-| FNDTN-04 | Phase 1 | Pending |
+| FNDTN-04 | Phase 1 | Complete |
 | CLIP-01 | Phase 2 | Pending |
 | CLIP-02 | Phase 2 | Pending |
 | CLIP-03 | Phase 2 | Pending |

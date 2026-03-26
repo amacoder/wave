@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Revamp & Polish
-status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-26T13:52:30Z"
+status: unknown
+stopped_at: Completed 01-02-PLAN.md (DesignSystem + animation gating)
+last_updated: "2026-03-26T13:01:04.556Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -46,6 +46,7 @@ Plan: 2 of 2
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work:
 - [01-01] RecordingPhase.done as explicit transient state with 1.5s idle transition — UI success feedback without timers in views
 - [01-01] Computed shims isRecording/isTranscribing on AppState for backward-compatible view reads
 - [01-01] Separate updateMenuBarIconForHealth() from phase-driven icon — health override wins, restores on recovery
+- [Phase 01-02]: DesignSystem.Colors.accentGradient used where direction matches (.leading/.trailing); explicit colors for other gradient directions
+- [Phase 01-02]: Phase-gated animation pattern: onChange(of: appState.phase) + onAppear guard eliminates idle CPU from repeatForever loops
+- [Phase 01-02]: CircularWaveformView phase renamed to animationPhase to avoid shadowing appState.phase
 
 ### Pending Todos
 
@@ -75,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26
-Stopped at: Completed 01-01-PLAN.md (RecordingPhase enum + CGEventTap health monitoring)
+Last session: 2026-03-26T13:01:04.552Z
+Stopped at: Completed 01-02-PLAN.md (DesignSystem + animation gating)
 Resume file: None
