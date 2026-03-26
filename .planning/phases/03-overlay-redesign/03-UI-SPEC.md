@@ -93,7 +93,7 @@ All colors use existing `DesignSystem.Colors` tokens. No new color values are in
 | Accent (10%) | `DesignSystem.Colors.vibrantBlue` | #2563EB | Waveform Canvas bars (recording), spinner arc stroke |
 | Accent gradient | `DesignSystem.Colors.accentGradient` | vibrantBlue → teal | Transcribing spinner arc only |
 | Idle icon | `DesignSystem.Colors.softBlueWhite` @ 50% opacity | #E0F2FE at 0.5 | Dim mic SF Symbol (idle state) |
-| Destructive | `Color.red` | system red | Not used in this phase |
+| Recording dot | `Color.red` | system red | Recording indicator dot and pulsing halo (recording state only) |
 
 **Accent reserved for:** waveform Canvas bars (recording state only), transcribing spinner arc stroke. Not applied to pill background, text, or idle/done states.
 
