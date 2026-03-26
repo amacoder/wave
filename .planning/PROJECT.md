@@ -40,7 +40,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 
 - [ ] Redesign overlay and views with Wispr Flow-inspired blue palette
 - [x] Fix buggy recording overlay appearance when holding Fn — Validated in Phase 03
-- [ ] Suppress hotkey activation when games/fullscreen apps are in focus
+- [x] Suppress hotkey activation when games/fullscreen apps are in focus — Validated in Phase 04
 - [x] Keep transcription on clipboard after paste (clipboard persistence) — Validated in Phase 02
 - [x] Smooth state transition animations (idle -> recording -> transcribing -> done) — Validated in Phase 01
 
@@ -60,7 +60,7 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 - Overlay: pill-shaped Capsule (280x52) at bottom-center with 4-state ZStack, Canvas waveform, spring transitions
 - Text insertion: clipboard + CGEvent Cmd+V (transcription persists on clipboard, TransientType marker hides from clipboard managers)
 - Hotkey detection: dual approach (NSEvent flagsChanged + CGEventTap backup)
-- No app exclusion logic exists currently
+- App exclusion: AppExclusionService with NSMetadataQuery app discovery, manual exclusion set, fullscreen/borderless detection via CGWindowListCopyWindowInfo, ExclusionSettingsTab in Settings
 - Reference design: Wispr Flow's "Flow Bar" — small pill overlay, soft neutrals, editorial aesthetic
 - Target palette: deep navy background, vibrant blue accent, soft blue-white highlights
 
@@ -77,8 +77,8 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 |----------|-----------|---------|
 | Blue palette over black/beige | User preference; blue is universally appealing and distinct from Wispr Flow | — Pending |
 | Wispr Flow as design reference | Best-in-class UX for push-to-talk dictation apps | — Pending |
-| Game exclusion via app detection | User plays League of Legends; accidental Fn triggers during gaming | — Pending |
+| Game exclusion via app detection | User plays League of Legends; accidental Fn triggers during gaming | Shipped Phase 04 |
 | Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | Shipped Phase 02 |
 
 ---
-*Last updated: 2026-03-26 after Phase 03 (Overlay Redesign) completion*
+*Last updated: 2026-03-26 after Phase 04 (App Exclusion) completion — all milestone phases complete*
