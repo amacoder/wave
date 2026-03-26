@@ -20,6 +20,7 @@
 		A10000010000000000000011 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000011 /* MenuBarPopoverView.swift */; };
 		A10000010000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000012 /* Assets.xcassets */; };
 		A10000010000000000000013 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000015 /* DesignSystem.swift */; };
+		A10000010000000000000016 /* AppExclusionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000016 /* AppExclusionService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		A10000020000000000000013 /* FlowSpeech.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlowSpeech.entitlements; sourceTree = "<group>"; };
 		A10000020000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10000020000000000000015 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A10000020000000000000016 /* AppExclusionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppExclusionService.swift; sourceTree = "<group>"; };
 		A10000030000000000000001 /* FlowSpeech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlowSpeech.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -83,6 +85,7 @@
 				A10000020000000000000005 /* KeychainManager.swift */,
 				A10000020000000000000006 /* TextInserter.swift */,
 				A10000020000000000000007 /* HotkeyManager.swift */,
+				A10000020000000000000016 /* AppExclusionService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -191,6 +194,7 @@
 				A10000010000000000000005 /* KeychainManager.swift in Sources */,
 				A10000010000000000000006 /* TextInserter.swift in Sources */,
 				A10000010000000000000007 /* HotkeyManager.swift in Sources */,
+				A10000010000000000000016 /* AppExclusionService.swift in Sources */,
 				A10000010000000000000008 /* SettingsView.swift in Sources */,
 				A10000010000000000000009 /* RecordingOverlayView.swift in Sources */,
 				A10000010000000000000010 /* OnboardingView.swift in Sources */,
