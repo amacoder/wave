@@ -9,38 +9,47 @@ import Foundation
 import AppKit
 import ApplicationServices
 
+// MARK: - NSPasteboard type constants
+
+extension NSPasteboard.PasteboardType {
+    /// Marks a pasteboard write as transient so clipboard managers skip logging.
+    /// Source: http://nspasteboard.org
+    static let transientContent = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
+}
+
 class TextInserter {
-    
+
     // MARK: - Text Insertion
-    
+
     /// Inserts text at the current cursor position via clipboard + Cmd+V
     func insertText(_ text: String) {
         print("TextInserter: inserting via clipboard + CGEvent Cmd+V")
-        
-        // Save current clipboard
+
         let pasteboard = NSPasteboard.general
-        let oldContent = pasteboard.string(forType: .string)
-        
-        // Set text to clipboard
+
+        // Write transcription to clipboard — no save/restore (CLIP-01)
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-        
+
+        // Mark as transient so clipboard managers skip logging (CLIP-03)
+        pasteboard.setData(Data(), forType: .transientContent)
+
+        // Snapshot for future restore guard (CLIP-02)
+        let changeCountAfterWrite = pasteboard.changeCount
+
         // Clear any held modifier keys first
         clearModifierKeys()
-        
+
         // Small delay to ensure modifiers are cleared
         usleep(50000) // 50ms
-        
+
         // Simulate Cmd+V
         simulatePaste()
-        
-        // Restore old clipboard after delay
-        if let old = oldContent {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                pasteboard.clearContents()
-                pasteboard.setString(old, forType: .string)
-            }
-        }
+
+        // CLIP-02: changeCountAfterWrite is available if a restore path is ever re-introduced.
+        // Usage: guard pasteboard.changeCount == changeCountAfterWrite else { return }
+        // If changeCount differs, user copied something else — skip any restore.
+        _ = changeCountAfterWrite
     }
     
     private func clearModifierKeys() {
