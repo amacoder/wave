@@ -40,7 +40,8 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
+            // Fixed sidebar
             VStack(spacing: 0) {
                 // App icon header
                 VStack(spacing: 6) {
@@ -56,14 +57,36 @@ struct SettingsView: View {
                 .padding(.bottom, 16)
 
                 // Tab list
-                List(SettingsTab.allCases, selection: $selectedTab) { tab in
-                    Label(tab.rawValue, systemImage: tab.icon)
-                        .tag(tab)
+                VStack(spacing: 2) {
+                    ForEach(SettingsTab.allCases) { tab in
+                        HStack(spacing: 8) {
+                            Image(systemName: tab.icon)
+                                .frame(width: 20)
+                                .foregroundColor(selectedTab == tab ? .white : .primary)
+                            Text(tab.rawValue)
+                                .foregroundColor(selectedTab == tab ? .white : .primary)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(selectedTab == tab ? Color.accentColor : Color.clear)
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture { selectedTab = tab }
+                    }
                 }
-                .listStyle(.sidebar)
+                .padding(.horizontal, 8)
+
+                Spacer()
             }
-            .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 200)
-        } detail: {
+            .frame(width: 170)
+            .background(Color(nsColor: .controlBackgroundColor))
+
+            Divider()
+
+            // Content
             Group {
                 switch selectedTab {
                 case .general:
@@ -82,8 +105,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("Wave Settings")
-        .frame(width: 650, height: 450)
+        .frame(width: 680, height: 560)
         .environmentObject(appState)
         .environmentObject(exclusionService)
         .onAppear {
@@ -425,7 +447,7 @@ struct AboutTab: View {
                 .font(.largeTitle)
                 .fontWeight(.bold)
 
-            Text("Version 1.0.0")
+            Text("Version 1.1.0")
                 .foregroundColor(.secondary)
 
             Text("Effortless voice dictation for macOS")
