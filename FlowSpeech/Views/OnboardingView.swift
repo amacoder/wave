@@ -177,7 +177,9 @@ struct APIKeySetupView: View {
                     .frame(width: 300)
                 
                 Button(isSaved ? "Saved ✓" : "Save") {
-                    if KeychainManager.shared.saveAPIKey(apiKey) {
+                    let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard trimmed.hasPrefix("sk-"), trimmed.count >= 20 else { return }
+                    if KeychainManager.shared.saveAPIKey(trimmed) {
                         isSaved = true
                         apiKey = ""
                     }

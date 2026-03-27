@@ -23,8 +23,6 @@ class AudioRecorder: NSObject, ObservableObject {
         let audioFilename = tempDir.appendingPathComponent("flowspeech_\(UUID().uuidString).m4a")
         recordingURL = audioFilename
         
-        print("Recording to: \(audioFilename.path)")
-        
         // Audio settings optimized for speech
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -39,17 +37,16 @@ class AudioRecorder: NSObject, ObservableObject {
             audioRecorder?.isMeteringEnabled = true
             
             let started = audioRecorder?.record() ?? false
-            print("Recording started: \(started)")
-            
+
             if started {
                 // Start level monitoring
                 startLevelMonitoring()
-            } else {
-                print("Failed to start recording - record() returned false")
             }
-            
+
         } catch {
+            #if DEBUG
             print("Failed to create recorder: \(error.localizedDescription)")
+            #endif
         }
     }
     
@@ -119,18 +116,12 @@ class AudioRecorder: NSObject, ObservableObject {
 
 extension AudioRecorder: AVAudioRecorderDelegate {
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        if flag {
-            print("Recording finished successfully at: \(recorder.url.path)")
-        } else {
-            print("Recording finished unsuccessfully")
-            print("Recording URL was: \(recorder.url.path)")
-            // Check if file exists
-            let exists = FileManager.default.fileExists(atPath: recorder.url.path)
-            print("File exists: \(exists)")
-        }
+        // No-op: delegate required but logging removed for production
     }
-    
+
     func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        #if DEBUG
         print("Recording encode error: \(error?.localizedDescription ?? "Unknown error")")
+        #endif
     }
 }

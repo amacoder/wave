@@ -89,7 +89,9 @@ class HotkeyManager: ObservableObject {
         )
         
         guard let eventTap = eventTap else {
+            #if DEBUG
             print("Failed to create event tap - accessibility permission may be required")
+            #endif
             return
         }
         
@@ -177,7 +179,7 @@ class HotkeyManager: ObservableObject {
     private func handleKeyUp(event: CGEvent) -> Bool? {
         let code = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
         
-        if code == keyCode && currentHotkey == .optionSpace || currentHotkey == .controlSpace {
+        if code == keyCode && (currentHotkey == .optionSpace || currentHotkey == .controlSpace) {
             onHotkeyUp?()
             return true
         }

@@ -43,6 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        // Clean up orphaned audio temp files from previous sessions
+        cleanupOrphanedTempFiles()
+
         // Show onboarding if first launch
         if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
             showOnboarding()
@@ -110,11 +113,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Handle hold-to-record
         if keyPressed && !modifierKeyDown {
             modifierKeyDown = true
+            #if DEBUG
             print("Hotkey pressed - starting recording")
+            #endif
             startRecording()
         } else if !keyPressed && modifierKeyDown {
             modifierKeyDown = false
+            #if DEBUG
             print("Hotkey released - stopping recording")
+            #endif
             stopRecordingAndTranscribe()
         }
     }
@@ -204,12 +211,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Transcription
     
     private func transcribe(audioURL: URL) async {
+        #if DEBUG
         print("Starting transcription for: \(audioURL.path)")
-        
+        #endif
+
         do {
             // Get API key from Keychain
             guard let apiKey = KeychainManager.shared.getAPIKey() else {
-                print("ERROR: No API key found in keychain")
                 await MainActor.run {
                     appState.errorMessage = "No API key configured. Please add your OpenAI API key in Settings."
                     appState.phase = .idle
@@ -219,8 +227,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
             
+            #if DEBUG
             print("API key found, calling Whisper API with model: \(appState.selectedModel.rawValue)")
-            
+            #endif
+
             // Transcribe using Whisper API
             let transcription = try await whisperService.transcribe(
                 audioURL: audioURL,
@@ -228,19 +238,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 model: appState.selectedModel,
                 language: appState.language == "auto" ? nil : appState.language
             )
-            
-            print("Transcription successful: \(transcription)")
 
             // Post-process: run Smart Cleanup via GPT-4o-mini if enabled
             var finalText = transcription
             if appState.smartCleanup {
-                print("Running Smart Cleanup via GPT-4o-mini...")
                 finalText = await cleanupService.cleanup(text: transcription, apiKey: apiKey)
-                print("Cleanup result: \(finalText)")
             }
 
             await MainActor.run {
-                print("MainActor block running, autoInsertText: \(appState.autoInsertText)")
                 appState.lastTranscription = finalText
                 appState.phase = .done
                 updateMenuBarIcon()
@@ -260,24 +265,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
                 // Insert text at cursor (with small delay to let modifier keys settle)
                 if appState.autoInsertText {
-                    print("Inserting text at cursor (after delay)...")
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [self] in
                         textInserter.insertText(finalText)
-                        print("Text insertion completed")
                         // Play success sound
                         NSSound(named: "Glass")?.play()
                     }
                 } else {
-                    print("autoInsertText is OFF, skipping insertion")
                     NSSound(named: "Glass")?.play()
                 }
             }
-            
+
             // Clean up audio file
             try? FileManager.default.removeItem(at: audioURL)
-            
+
         } catch {
-            print("Transcription ERROR: \(error.localizedDescription)")
+            #if DEBUG
+            print("Transcription error: \(error.localizedDescription)")
+            #endif
             await MainActor.run {
                 appState.errorMessage = "Transcription failed: \(error.localizedDescription)"
                 appState.phase = .idle
@@ -414,7 +418,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
     
     // MARK: - Onboarding
@@ -435,7 +443,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.contentView = NSHostingView(rootView: onboardingView)
         window.center()
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
     
     // MARK: - Permissions
@@ -468,6 +480,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func quitApp() {
         NSApplication.shared.terminate(nil)
+    }
+
+    // MARK: - Temp File Cleanup
+
+    private func cleanupOrphanedTempFiles() {
+        let tempDir = FileManager.default.temporaryDirectory
+        guard let contents = try? FileManager.default.contentsOfDirectory(
+            at: tempDir,
+            includingPropertiesForKeys: nil
+        ) else { return }
+
+        for file in contents where file.lastPathComponent.hasPrefix("flowspeech_") && file.pathExtension == "m4a" {
+            try? FileManager.default.removeItem(at: file)
+        }
     }
 }
 

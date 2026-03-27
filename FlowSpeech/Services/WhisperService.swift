@@ -8,7 +8,7 @@
 import Foundation
 
 class WhisperService {
-    private let baseURL = "https://api.openai.com/v1/audio/transcriptions"
+    private let baseURL = URL(string: "https://api.openai.com/v1/audio/transcriptions")!
     
     struct TranscriptionError: LocalizedError {
         let message: String
@@ -54,7 +54,7 @@ class WhisperService {
         
         // Create multipart form request
         let boundary = UUID().uuidString
-        var request = URLRequest(url: URL(string: baseURL)!)
+        var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -101,29 +101,22 @@ class WhisperService {
         request.httpBody = body
         
         // Make request
-        print("Sending request to OpenAI... (audio size: \(audioData.count) bytes)")
         let (data, response) = try await URLSession.shared.data(for: request)
-        
+
         guard let httpResponse = response as? HTTPURLResponse else {
             throw TranscriptionError(message: "Invalid response from server")
         }
-        
-        print("Response status: \(httpResponse.statusCode)")
-        
+
         // Handle errors
         if httpResponse.statusCode != 200 {
-            let responseString = String(data: data, encoding: .utf8) ?? "no body"
-            print("API error response: \(responseString)")
-            // Try to parse error response
             if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: data) {
                 throw TranscriptionError(message: errorResponse.error.message)
             }
             throw TranscriptionError(message: "API request failed with status \(httpResponse.statusCode)")
         }
-        
+
         // Parse response
         let transcriptionResponse = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
-        print("Transcription result: \(transcriptionResponse.text)")
         return transcriptionResponse.text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     

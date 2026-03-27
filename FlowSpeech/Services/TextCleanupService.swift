@@ -45,7 +45,6 @@ class TextCleanupService {
         ]
 
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else {
-            print("TextCleanupService: Invalid URL — returning original text")
             return text
         }
 
@@ -59,8 +58,6 @@ class TextCleanupService {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-                let body = String(data: data, encoding: .utf8) ?? "<no body>"
-                print("TextCleanupService: HTTP \(httpResponse.statusCode) — \(body) — returning original text")
                 return text
             }
 
@@ -69,7 +66,6 @@ class TextCleanupService {
             return cleaned
 
         } catch {
-            print("TextCleanupService: Error during cleanup — \(error.localizedDescription) — returning original text")
             return text
         }
     }

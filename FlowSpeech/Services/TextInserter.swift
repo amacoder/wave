@@ -23,8 +23,6 @@ class TextInserter {
 
     /// Inserts text at the current cursor position via clipboard + Cmd+V
     func insertText(_ text: String) {
-        print("TextInserter: inserting via clipboard + CGEvent Cmd+V")
-
         let pasteboard = NSPasteboard.general
 
         // Write transcription to clipboard — no save/restore (CLIP-01)
@@ -71,12 +69,16 @@ class TextInserter {
             ctrlUp.post(tap: .cghidEventTap)
         }
         
+        #if DEBUG
         print("TextInserter: modifier keys cleared")
+        #endif
     }
     
     private func simulatePaste() {
         guard let source = CGEventSource(stateID: .hidSystemState) else {
+            #if DEBUG
             print("TextInserter: failed to create event source")
+            #endif
             return
         }
         
@@ -85,7 +87,9 @@ class TextInserter {
               let vDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true),
               let vUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false),
               let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 55, keyDown: false) else {
+            #if DEBUG
             print("TextInserter: failed to create key events")
+            #endif
             return
         }
         
@@ -103,7 +107,9 @@ class TextInserter {
         
         cmdUp.post(tap: .cghidEventTap)
         
+        #if DEBUG
         print("TextInserter: Cmd+V posted via CGEvent")
+        #endif
     }
     
     // MARK: - Accessibility API Method

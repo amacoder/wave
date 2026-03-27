@@ -183,7 +183,9 @@ struct GeneralSettingsTab: View {
                     try SMAppService.mainApp.unregister()
                 }
             } catch {
+                #if DEBUG
                 print("Failed to set launch at login: \(error)")
+                #endif
             }
         }
     }
@@ -406,7 +408,13 @@ struct APISettingsTab: View {
     }
 
     private func saveAPIKey() {
-        if KeychainManager.shared.saveAPIKey(apiKey) {
+        let trimmed = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("sk-"), trimmed.count >= 20 else {
+            saveStatus = "✗ Invalid key format (must start with sk-)"
+            return
+        }
+
+        if KeychainManager.shared.saveAPIKey(trimmed) {
             saveStatus = "✓ Saved"
             isAPIKeySaved = true
             apiKey = ""
