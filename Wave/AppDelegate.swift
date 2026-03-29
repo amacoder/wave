@@ -131,18 +131,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var modifierKeyDown = false
     
     private func handleFlagsChanged(_ event: NSEvent) {
-        // Fn key, option+space, control+space are handled by HotkeyManager's CGEventTap
-        // NSEvent fallback only handles caps lock variants
+        // Option+space and control+space are handled by HotkeyManager's CGEventTap
+        // Fn key is handled here via NSEvent (works in Chrome where CGEventTap misses fn release)
+        // NSEvent also handles caps lock variants
         switch appState.selectedHotkey {
-        case .fnKey, .optionSpace, .controlSpace:
+        case .optionSpace, .controlSpace:
             return
-        case .capsLock, .doubleTapCapsLock:
+        case .fnKey, .capsLock, .doubleTapCapsLock:
             break
         }
 
         let flags = event.modifierFlags
         let keyPressed: Bool
         switch appState.selectedHotkey {
+        case .fnKey:
+            keyPressed = flags.contains(.function)
         case .capsLock:
             keyPressed = flags.contains(.option)
         case .doubleTapCapsLock:

@@ -192,13 +192,8 @@ class HotkeyManager: ObservableObject {
         
         switch currentHotkey {
         case .fnKey:
-            // Fn key handling
-            if flags.contains(.maskSecondaryFn) {
-                onHotkeyDown?()
-            } else {
-                onHotkeyUp?()
-            }
-            return nil // Don't consume modifier events
+            // Fn key handled by NSEvent monitor in AppDelegate (works in Chrome)
+            return nil
             
         default:
             return nil
