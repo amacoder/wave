@@ -28,26 +28,28 @@
 
 ## Installation
 
+### DMG (Recommended)
+
+1. **Download** the latest `Wave.dmg` from [Releases](https://github.com/maewa-space/wave/releases)
+2. **Open** the DMG and drag **Wave.app** into your **Applications** folder
+3. **Launch** Wave from Applications or Spotlight
+
 ### Build from Source
 
-1. **Clone the repository**
+1. **Clone and build the DMG**
    ```bash
    git clone https://github.com/maewa-space/wave.git
    cd wave
+   chmod +x build-dmg.sh
+   ./build-dmg.sh
    ```
+   This produces `Wave.dmg` in the project root — open it and drag to Applications.
 
-2. **Open in Xcode**
+2. **Or open in Xcode**
    ```bash
    open FlowSpeech.xcodeproj
    ```
-
-3. **Configure signing**
-   - Open the project settings
-   - Select your development team
-   - Update the bundle identifier if needed
-
-4. **Build and run**
-   - Press `Cmd+R` or click the Play button
+   Configure your signing team, then `Cmd+R` to build and run.
 
 ### First Run
 
@@ -136,6 +138,10 @@ System Settings → Privacy & Security → Microphone → Enable Wave
 - Check Accessibility permissions
 - Text is always copied to clipboard as fallback
 
+### Fn key doesn't trigger recording
+On macOS Ventura+, the fn/globe key opens the Emoji picker by default. Change it:
+System Settings → Keyboard → **"Press 🌐 key to"** → Set to **"Do Nothing"** (or "Change Input Source")
+
 ### Caps Lock still toggles caps
 System Settings → Keyboard → Modifier Keys → Set Caps Lock to "No Action"
 
@@ -146,6 +152,13 @@ System Settings → Keyboard → Modifier Keys → Set Caps Lock to "No Action"
 - **No telemetry:** Wave doesn't collect any usage data
 
 ## Changelog
+
+### v1.1.1 — Hotkey Fix & DMG Installer (2026-03-29)
+
+- **Fixed:** Fn key detection now uses CGEventTap (was broken due to unused HotkeyManager wiring)
+- **Fixed:** HotkeyManager reconfigures live when user changes hotkey in Settings
+- **Added:** `build-dmg.sh` produces a proper `Wave.dmg` with drag-to-Applications install
+- **Added:** Fn key troubleshooting note for macOS Ventura+ emoji picker conflict
 
 ### v1.1 — UI Revamp & Polish (2026-03-26)
 
