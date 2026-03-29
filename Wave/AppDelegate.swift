@@ -43,6 +43,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        // Reconfigure HotkeyManager when user changes hotkey in settings
+        appState.$selectedHotkey
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] newHotkey in
+                guard let self = self else { return }
+                self.hotkeyManager.stop()
+                self.hotkeyManager.configure(
+                    hotkey: newHotkey,
+                    onDown: { [weak self] in
+                        DispatchQueue.main.async { self?.startRecording() }
+                    },
+                    onUp: { [weak self] in
+                        DispatchQueue.main.async { self?.stopRecordingAndTranscribe() }
+                    }
+                )
+                self.hotkeyManager.start()
+            }
+            .store(in: &cancellables)
+
         // Clean up orphaned audio temp files from previous sessions
         cleanupOrphanedTempFiles()
 
@@ -75,18 +95,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Hotkey Setup
     
     private func setupHotkeys() {
-        // Monitor for Caps Lock (flags changed events)
+        // Configure and start the CGEventTap-based HotkeyManager (robust fn key detection)
+        hotkeyManager.configure(
+            hotkey: appState.selectedHotkey,
+            onDown: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.startRecording()
+                }
+            },
+            onUp: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.stopRecordingAndTranscribe()
+                }
+            }
+        )
+        hotkeyManager.start()
+
+        // NSEvent monitors as fallback for modifier-based hotkeys (caps lock, etc.)
         flagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.handleFlagsChanged(event)
         }
-        
+
         // Also monitor local events for when app is focused
         NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.handleFlagsChanged(event)
             return event
         }
-        
-        // Monitor for modifier key combinations
+
+        // Monitor for escape to cancel recording
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleKeyDown(event)
         }
@@ -95,21 +131,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var modifierKeyDown = false
     
     private func handleFlagsChanged(_ event: NSEvent) {
+        // Fn key, option+space, control+space are handled by HotkeyManager's CGEventTap
+        // NSEvent fallback only handles caps lock variants
+        switch appState.selectedHotkey {
+        case .fnKey, .optionSpace, .controlSpace:
+            return
+        case .capsLock, .doubleTapCapsLock:
+            break
+        }
+
         let flags = event.modifierFlags
-        
-        // Check which modifier to use based on selected hotkey
         let keyPressed: Bool
         switch appState.selectedHotkey {
-        case .fnKey:
-            keyPressed = flags.contains(.function)
-        case .optionSpace, .capsLock:
+        case .capsLock:
             keyPressed = flags.contains(.option)
-        case .controlSpace:
-            keyPressed = flags.contains(.control)
         case .doubleTapCapsLock:
             keyPressed = flags.contains(.capsLock)
+        default:
+            return
         }
-        
+
         // Handle hold-to-record
         if keyPressed && !modifierKeyDown {
             modifierKeyDown = true
