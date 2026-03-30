@@ -138,9 +138,10 @@ System Settings → Privacy & Security → Microphone → Enable Wave
 - Check Accessibility permissions
 - Text is always copied to clipboard as fallback
 
-### Fn key doesn't trigger recording
-On macOS Ventura+, the fn/globe key opens the Emoji picker by default. Change it:
-System Settings → Keyboard → **"Press 🌐 key to"** → Set to **"Do Nothing"** (or "Change Input Source")
+### Fn key doesn't trigger recording (especially in Chrome)
+macOS defaults to using the fn/globe key for the Emoji picker. This blocks Wave from seeing fn keypresses — particularly in Chrome, which fully suppresses the event. **This is required for fn key to work:**
+
+System Settings → Keyboard → **"Press 🌐 key to"** → Set to **"Do Nothing"**
 
 ### Caps Lock still toggles caps
 System Settings → Keyboard → Modifier Keys → Set Caps Lock to "No Action"
