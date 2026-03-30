@@ -51,17 +51,17 @@ Requirements for Companion App milestone.
 
 ### Dictionary
 
-- [ ] **DICT-01**: User can add custom words/terms to improve Whisper transcription accuracy
-- [ ] **DICT-02**: User can add abbreviation expansions (e.g., "btw" → "by the way")
-- [ ] **DICT-03**: Dictionary words are fed into Whisper API prompt parameter (with 224-token cap enforced)
-- [ ] **DICT-04**: User can search, edit, and delete dictionary entries
-- [ ] **DICT-05**: Dictionary UI shows character count toward the Whisper prompt limit
+- [x] **DICT-01**: User can add custom words/terms to improve Whisper transcription accuracy
+- [x] **DICT-02**: User can add abbreviation expansions (e.g., "btw" → "by the way")
+- [x] **DICT-03**: Dictionary words are fed into Whisper API prompt parameter (with 224-token cap enforced)
+- [x] **DICT-04**: User can search, edit, and delete dictionary entries
+- [x] **DICT-05**: Dictionary UI shows character count toward the Whisper prompt limit
 
 ### Snippets
 
 - [ ] **SNIP-01**: User can create text expansion snippets with trigger phrase and expanded text
-- [ ] **SNIP-02**: Trigger phrases in transcriptions are automatically replaced with expanded text (case-insensitive)
-- [ ] **SNIP-03**: Snippet expansion runs after GPT-4o-mini cleanup, before paste
+- [x] **SNIP-02**: Trigger phrases in transcriptions are automatically replaced with expanded text (case-insensitive)
+- [x] **SNIP-03**: Snippet expansion runs after GPT-4o-mini cleanup, before paste
 - [ ] **SNIP-04**: User can search, edit, and delete snippet entries
 
 ## Future Requirements
@@ -115,14 +115,14 @@ Requirements for Companion App milestone.
 | HIST-03 | Phase 6 | Complete |
 | HIST-04 | Phase 6 | Complete |
 | HIST-05 | Phase 6 | Complete |
-| DICT-01 | Phase 7 | Pending |
-| DICT-02 | Phase 7 | Pending |
-| DICT-03 | Phase 7 | Pending |
-| DICT-04 | Phase 7 | Pending |
-| DICT-05 | Phase 7 | Pending |
+| DICT-01 | Phase 7 | Complete |
+| DICT-02 | Phase 7 | Complete |
+| DICT-03 | Phase 7 | Complete |
+| DICT-04 | Phase 7 | Complete |
+| DICT-05 | Phase 7 | Complete |
 | SNIP-01 | Phase 7 | Pending |
-| SNIP-02 | Phase 7 | Pending |
-| SNIP-03 | Phase 7 | Pending |
+| SNIP-02 | Phase 7 | Complete |
+| SNIP-03 | Phase 7 | Complete |
 | SNIP-04 | Phase 7 | Pending |
 
 **Coverage:**

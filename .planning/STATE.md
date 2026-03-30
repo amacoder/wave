@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Companion App
 status: executing
-stopped_at: Completed 07-02-PLAN.md (DictionaryView CRUD)
-last_updated: "2026-03-30T14:29:34.309Z"
+stopped_at: Completed 07-01-PLAN.md (Dictionary & Snippet Services)
+last_updated: "2026-03-30T14:30:31.358Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 12
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 07 (dictionary-snippets) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-03-30
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 | Phase 06-history P01 | 8 | 1 tasks | 1 files |
 | Phase 06-history P02 | 12 | 1 tasks | 1 files |
 | Phase 07-dictionary-snippets P02 | 5 | 1 tasks | 1 files |
+| Phase 07-dictionary-snippets P01 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,9 @@ Recent decisions affecting current work:
 - [Phase 06-02]: Undo delete pattern: hold pendingUndo in-memory, delete from context, start 3-second Task, re-insert on undo tap
 - [Phase 07-02]: EditingDictionaryState as value-type struct with Identifiable conformance — enables .sheet(item:) pattern with SwiftUI copy semantics for safe field binding
 - [Phase 07-02]: PromptCharCountBar always visible below divider — visible even when list is empty, giving users baseline context before adding any terms
+- [Phase 07-01]: Case-insensitive TextReplacer using NSRegularExpression — Whisper output capitalisation is non-deterministic (D-02)
+- [Phase 07-01]: Sentence-format Whisper prompt 'In this transcript: ...' — outperforms comma-separated lists (D-05)
+- [Phase 07-01]: Newest-first sort for buildPrompt truncation prioritisation (D-06)
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-30
-Last session: 2026-03-30T14:29:34.301Z
-Stopped at: Completed 07-02-PLAN.md (DictionaryView CRUD)
+Last session: 2026-03-30T14:30:31.354Z
+Stopped at: Completed 07-01-PLAN.md (Dictionary & Snippet Services)
 Resume file: None
