@@ -37,14 +37,31 @@ struct SidebarView: View {
     @Binding var selection: SidebarItem?
 
     var body: some View {
-        List(selection: $selection) {
-            ForEach(SidebarItem.mainItems) { item in
-                Label(item.title, systemImage: item.icon)
-                    .tag(item)
+        VStack(spacing: 0) {
+            // Branded header
+            HStack(spacing: 7) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                Text("Wave")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
             }
-        }
-        .listStyle(.sidebar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.top, 6)
+            .padding(.bottom, 6)
+
+            // Nav items
+            List(selection: $selection) {
+                ForEach(SidebarItem.mainItems) { item in
+                    Label(item.title, systemImage: item.icon)
+                        .tag(item)
+                }
+            }
+            .listStyle(.sidebar)
+
+            // Pinned settings
             VStack(spacing: 0) {
                 Divider()
                 List(selection: $selection) {
@@ -56,5 +73,6 @@ struct SidebarView: View {
                 .scrollDisabled(true)
             }
         }
+        .navigationSplitViewColumnWidth(190)
     }
 }

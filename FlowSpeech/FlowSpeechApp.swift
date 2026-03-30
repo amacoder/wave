@@ -28,7 +28,7 @@ struct FlowSpeechApp: App {
     }
 
     var body: some Scene {
-        WindowGroup(id: "companion") {
+        WindowGroup("", id: "companion") {
             CompanionWindowView()
                 .environmentObject(appDelegate.appState)
                 .environmentObject(appDelegate.exclusionService)

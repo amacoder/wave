@@ -23,6 +23,7 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var pendingUndo: TranscriptionEntry? = nil
     @State private var undoToastTask: Task<Void, Never>? = nil
+    @State private var showCopiedToast = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -39,22 +40,28 @@ struct HomeView: View {
                         Divider()
                         ForEach(groupedEntries, id: \.label) { group in
                             Text(group.label)
-                                .font(.caption)
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.secondary)
-                                .padding(.horizontal, 16)
-                                .padding(.top, 12)
-                                .padding(.bottom, 4)
+                                .padding(.horizontal, 24)
+
+                                .padding(.top, 16)
+                                .padding(.bottom, 6)
                             ForEach(group.entries) { entry in
                                 HistoryEntryRow(
                                     entry: entry,
                                     onCopy: { copyEntry(entry) },
                                     onDelete: { deleteEntry(entry) }
                                 )
-                                Divider().padding(.leading, 16)
+                                Divider().padding(.leading, 24)
                             }
                         }
                     }
                 }
+            }
+            if showCopiedToast {
+                CopiedToastView()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.bottom, pendingUndo != nil ? 52 : 12)
             }
             if pendingUndo != nil {
                 UndoToastView(onUndo: undoDelete)
@@ -63,6 +70,7 @@ struct HomeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: pendingUndo != nil)
+        .animation(.easeInOut(duration: 0.15), value: showCopiedToast)
     }
 
     // MARK: - Computed Properties
@@ -95,6 +103,11 @@ struct HomeView: View {
     private func copyEntry(_ entry: TranscriptionEntry) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(entry.cleanedText, forType: .string)
+        showCopiedToast = true
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            showCopiedToast = false
+        }
     }
 
     private func deleteEntry(_ entry: TranscriptionEntry) {
@@ -149,37 +162,37 @@ private struct HistoryHeaderView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center) {
+        VStack(alignment: .leading, spacing: 16) {
             let firstName = NSFullUserName().components(separatedBy: " ").first ?? NSUserName()
             Text("Welcome back, \(firstName)")
-                .font(.title2)
-                .bold()
-            Spacer()
-            HStack(spacing: 24) {
-                StatBadge(emoji: "\u{1F4AA}", value: "\(streakDays)d", label: "streak")
-                StatBadge(emoji: "\u{1F680}", value: formatNumber(totalWords), label: "words")
-                StatBadge(emoji: "\u{1F3C6}", value: "\(averageWPM)", label: "avg wpm")
+                .font(.system(size: 22, weight: .bold))
+
+            HStack(spacing: 20) {
+                StatBadge(icon: "flame.fill", iconColor: .orange, value: "\(streakDays) day\(streakDays == 1 ? "" : "s")")
+                StatBadge(icon: "text.word.spacing", iconColor: .blue, value: "\(formatNumber(totalWords)) words")
+                StatBadge(icon: "gauge.open.with.lines.needle.33percent", iconColor: .green, value: "\(averageWPM) WPM")
             }
         }
-        .padding(16)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
 }
 
 // MARK: - StatBadge
 
 private struct StatBadge: View {
-    let emoji: String
+    let icon: String
+    let iconColor: Color
     let value: String
-    let label: String
 
     var body: some View {
-        VStack(spacing: 4) {
-            Text(emoji)
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(iconColor)
             Text(value)
-                .font(.body.bold())
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.primary)
         }
         .accessibilityElement(children: .combine)
     }
@@ -205,35 +218,36 @@ private struct HistoryEntryRow: View {
                 .font(.body)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .background(isHovered || isCopied ? Color(nsColor: .unemphasizedSelectedContentBackgroundColor) : Color.clear)
+        .contentShape(Rectangle())
+        .overlay(alignment: .trailing) {
             if isHovered {
                 HStack(spacing: 8) {
-                    Button {
-                        copyAction()
-                    } label: {
+                    Button { copyAction() } label: {
                         Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                     }
                     .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
                     .accessibilityLabel("Copy transcription")
-                    Button {
-                        onDelete()
-                    } label: {
+                    Button { onDelete() } label: {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(.red)
                     .accessibilityLabel("Delete transcription")
                 }
+                .padding(.trailing, 16)
                 .transition(.opacity)
             }
         }
-        .contentShape(Rectangle())
+        .padding(.horizontal, 8)
         .onTapGesture { copyAction() }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
         }
-        .background(isHovered || isCopied ? Color.accentColor.opacity(0.08) : Color.clear)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
     }
 
     private func copyAction() {
@@ -251,6 +265,23 @@ private struct HistoryEntryRow: View {
         } else {
             return date.formatted(.dateTime.month(.abbreviated).day())
         }
+    }
+}
+
+// MARK: - CopiedToastView
+
+private struct CopiedToastView: View {
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.green)
+                .font(.body)
+            Text("Copied")
+                .font(.body)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

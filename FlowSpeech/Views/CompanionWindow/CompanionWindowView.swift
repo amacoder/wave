@@ -17,7 +17,6 @@ struct CompanionWindowView: View {
     var body: some View {
         NavigationSplitView {
             SidebarView(selection: $selectedItem)
-                .navigationSplitViewColumnWidth(180)
         } detail: {
             NavigationStack {
                 Group {
@@ -41,6 +40,10 @@ struct CompanionWindowView: View {
                     delegate.originalWindowDelegate = window.delegate
                     window.delegate = delegate
                 }
+                window.title = ""
+                window.titleVisibility = .hidden
+                window.styleMask.insert(.fullSizeContentView)
+                window.titlebarAppearsTransparent = true
             }
         )
         .onReceive(NotificationCenter.default.publisher(for: .navigateToSettings)) { _ in

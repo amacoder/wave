@@ -49,27 +49,38 @@ struct SnippetsView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if entries.isEmpty && searchText.isEmpty {
-                EmptyStateView(
-                    symbol: "sparkles",
-                    title: "No snippets yet",
-                    message: "Create trigger phrases that automatically expand into longer text after each dictation."
-                )
-            } else {
-                List(filteredEntries) { entry in
-                    SnippetEntryRow(
-                        entry: entry,
-                        onEdit: {
-                            editingSnippet = EditingSnippetState(from: entry)
-                        },
-                        onDelete: {
-                            deleteEntry(entry)
-                        }
-                    )
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Snippets")
+                        .font(.system(size: 26, weight: .bold))
+                    Spacer()
                 }
-                .listStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 12)
+
+                if entries.isEmpty && searchText.isEmpty {
+                    EmptyStateView(
+                        symbol: "sparkles",
+                        title: "No snippets yet",
+                        message: "Create trigger phrases that automatically expand into longer text after each dictation."
+                    )
+                } else {
+                    List(filteredEntries) { entry in
+                        SnippetEntryRow(
+                            entry: entry,
+                            onEdit: {
+                                editingSnippet = EditingSnippetState(from: entry)
+                            },
+                            onDelete: {
+                                deleteEntry(entry)
+                            }
+                        )
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.visible)
+                    }
+                    .listStyle(.plain)
+                }
             }
 
             if pendingUndo != nil {
@@ -151,43 +162,37 @@ private struct SnippetEntryRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.trigger)
-                    .fontWeight(.bold)
-                Text("\u{2192} " + truncatedExpansion)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            Text(entry.trigger)
+                .font(.body)
+            Text("\u{2192}")
+                .foregroundColor(.secondary)
+            Text(truncatedExpansion)
+                .font(.body)
+                .foregroundColor(.secondary)
             Spacer()
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .overlay(alignment: .trailing) {
             if isHovered {
                 HStack(spacing: 8) {
-                    Button {
-                        onEdit()
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Edit \(entry.trigger)")
-
-                    Button {
-                        onDelete()
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.red)
-                    .accessibilityLabel("Delete \(entry.trigger)")
+                    Button { onEdit() } label: { Image(systemName: "pencil") }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Edit \(entry.trigger)")
+                    Button { onDelete() } label: { Image(systemName: "trash") }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.red)
+                        .accessibilityLabel("Delete \(entry.trigger)")
                 }
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
+        .background(isHovered ? Color(nsColor: .unemphasizedSelectedContentBackgroundColor) : Color.clear)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
         }
-        .background(isHovered ? Color.accentColor.opacity(0.08) : Color.clear)
     }
 }
 

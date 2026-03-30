@@ -75,7 +75,16 @@ struct DictionaryView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("Dictionary")
+                        .font(.system(size: 26, weight: .bold))
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 12)
+
                 if entries.isEmpty && searchText.isEmpty {
                     EmptyStateView(
                         symbol: "character.book.closed",
@@ -93,8 +102,8 @@ struct DictionaryView: View {
                                 deleteEntry(entry)
                             }
                         )
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.visible)
                     }
                     .listStyle(.plain)
                 }
@@ -188,8 +197,7 @@ private struct DictionaryEntryRow: View {
             if entry.isAbbreviation {
                 Text(entry.term)
                     .font(.body)
-                Text(" → ")
-                    .font(.body)
+                Text("\u{2192}")
                     .foregroundColor(.secondary)
                 Text(entry.replacement ?? "")
                     .font(.body)
@@ -198,38 +206,30 @@ private struct DictionaryEntryRow: View {
                 Text(entry.term)
                     .font(.body)
             }
-
             Spacer()
-
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .overlay(alignment: .trailing) {
             if isHovered {
-                HStack(spacing: 4) {
-                    Button {
-                        onEdit()
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Edit \(entry.term)")
-
-                    Button {
-                        onDelete()
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.red)
-                    .accessibilityLabel("Delete \(entry.term)")
+                HStack(spacing: 8) {
+                    Button { onEdit() } label: { Image(systemName: "pencil") }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Edit \(entry.term)")
+                    Button { onDelete() } label: { Image(systemName: "trash") }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.red)
+                        .accessibilityLabel("Delete \(entry.term)")
                 }
                 .transition(.opacity)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
+        .background(isHovered ? Color(nsColor: .unemphasizedSelectedContentBackgroundColor) : Color.clear)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
         }
-        .background(isHovered ? Color.accentColor.opacity(0.08) : Color.clear)
     }
 }
 
@@ -308,10 +308,11 @@ private struct DictionaryEditSheet: View {
                     onSave(updated)
                 }
                 .disabled(isConfirmDisabled)
+                .buttonStyle(.borderedProminent)
             }
         }
         .padding(32)
-        .frame(minWidth: 350)
+        .frame(minWidth: 380)
         .animation(.easeInOut(duration: 0.2), value: isAbbreviation)
     }
 }
@@ -323,23 +324,39 @@ private struct PromptCharCountBar: View {
     let promptCharLimit: Int
     let countColor: Color
 
-    var body: some View {
-        HStack {
-            if promptCharCount > promptCharLimit {
-                Text("\(promptCharCount) / \(promptCharLimit) chars — Limit reached, oldest terms will be omitted")
-                    .font(.caption)
-                    .foregroundColor(countColor)
-            } else {
-                Text("\(promptCharCount) / \(promptCharLimit) chars")
-                    .font(.caption)
-                    .foregroundColor(countColor)
-            }
+    private var ratio: Double {
+        min(Double(promptCharCount) / Double(promptCharLimit), 1.0)
+    }
 
-            Spacer()
+    var body: some View {
+        VStack(spacing: 6) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.primary.opacity(0.06))
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(countColor.opacity(0.6))
+                        .frame(width: geo.size.width * ratio)
+                }
+            }
+            .frame(height: 4)
+
+            HStack {
+                Text("\(promptCharCount) / \(promptCharLimit) chars")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Spacer()
+                if promptCharCount > promptCharLimit {
+                    Text("Limit reached — oldest terms omitted")
+                        .font(.caption2)
+                        .foregroundColor(.red)
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .animation(.easeInOut(duration: 0.3), value: countColor)
+        .animation(.easeInOut(duration: 0.3), value: ratio)
         .accessibilityLabel("Prompt usage: \(promptCharCount) of 1100 characters")
     }
 }
