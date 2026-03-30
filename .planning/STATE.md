@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Companion App
 status: executing
-stopped_at: Completed 05-01 (Companion Shell Foundation)
-last_updated: "2026-03-30T09:31:19.408Z"
+stopped_at: "Checkpoint 05-02 Task 2: human-verify companion lifecycle"
+last_updated: "2026-03-30T09:38:52.725Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
   completed_phases: 4
-  total_plans: 8
+  total_plans: 6
   completed_plans: 7
   percent: 0
 ---
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 05 (companion-shell) — EXECUTING
-Plan: 1 of 2 complete
-Status: Executing Phase 05
-Last activity: 2026-03-30 -- Plan 05-01 complete, executing Wave 2
+Plan: 2 of 2 complete
+Status: Ready to execute
+Last activity: 2026-03-30
 
 Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 | 05-companion-shell P01 | 4 | 2 tasks | 13 files |
 
 *Updated after each plan completion*
+| Phase 05-companion-shell P02 | 6 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ Recent decisions affecting current work:
 - [Phase 05-01]: Single ModelContainer initialized in FlowSpeechApp.init() and shared with AppDelegate — no second container
 - [Phase 05-01]: WindowGroup scene (not NSHostingView) for companion window — required for @Query to work in Phase 6
 - [Phase 05-01]: NSWindowDelegate chaining: windowShouldClose returns false + orderOut + 0.1s setActivationPolicy(.accessory) delay
+- [Phase 05-02]: windowShouldClose guards sender === companionWindow so settings/onboarding windows still close normally
+- [Phase 05-02]: disableDockIcon uses 100ms async delay to prevent focus-stealing flicker; openCompanion first-open relies on SwiftUI WindowGroup auto-present on app activate
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-30
-Last session: 2026-03-30T09:31:19.403Z
-Stopped at: Completed 05-01 (Companion Shell Foundation)
+Last session: 2026-03-30T09:38:52.721Z
+Stopped at: Checkpoint 05-02 Task 2: human-verify companion lifecycle
 Resume file: None

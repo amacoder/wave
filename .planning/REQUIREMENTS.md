@@ -38,7 +38,7 @@ Requirements for Companion App milestone.
 ### App Shell
 
 - [ ] **SHELL-01**: User can open a companion window with sidebar navigation (Home, Dictionary, Snippets)
-- [ ] **SHELL-02**: App shows dock icon when companion window is open and hides it when closed
+- [x] **SHELL-02**: App shows dock icon when companion window is open and hides it when closed
 - [ ] **SHELL-03**: Companion window uses SwiftUI WindowGroup with SwiftData ModelContainer shared across app
 
 ### History
@@ -108,7 +108,7 @@ Requirements for Companion App milestone.
 | EXCL-02 | Phase 4 | Complete |
 | EXCL-03 | Phase 4 | Complete |
 | SHELL-01 | Phase 5 | Pending |
-| SHELL-02 | Phase 5 | Pending |
+| SHELL-02 | Phase 5 | Complete |
 | SHELL-03 | Phase 5 | Pending |
 | HIST-01 | Phase 6 | Pending |
 | HIST-02 | Phase 6 | Pending |
