@@ -113,9 +113,9 @@ Plans:
   3. A stats header above the list shows consecutive usage streak in days, total word count, and average WPM
   4. User can tap Copy on any entry to put its text on the clipboard, and Delete to remove it permanently
   5. History does not degrade in open speed after months of use — a fetchLimit of 200 and 90-day retention are enforced from day one
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 06-01-PLAN.md — Pipeline save hook, recording metadata capture, 90-day retention cleanup
+- [x] 06-01-PLAN.md — Pipeline save hook, recording metadata capture, 90-day retention cleanup
 - [ ] 06-02-PLAN.md — HomeView with @Query, date grouping, stats header, copy/delete actions, undo toast
 
 ### Phase 7: Dictionary & Snippets
@@ -153,7 +153,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 3. Overlay Redesign | v1.1 | 1/1 | Complete | 2026-03-26 |
 | 4. App Exclusion | v1.1 | 2/2 | Complete | 2026-03-26 |
 | 5. Companion Shell | v1.2 | 2/2 | Complete | 2026-03-30 |
-| 6. History | v1.2 | 0/2 | Planning | - |
+| 6. History | v1.2 | 1/2 | In Progress|  |
 | 7. Dictionary & Snippets | v1.2 | 0/TBD | Not started | - |
 | 8. Integration Polish | v1.2 | 0/TBD | Not started | - |
 

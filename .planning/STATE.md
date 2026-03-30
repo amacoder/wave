@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Companion App
 status: executing
-stopped_at: "Checkpoint 05-02 Task 2: human-verify companion lifecycle"
-last_updated: "2026-03-30T10:27:48.165Z"
+stopped_at: Completed 06-01-PLAN.md (Transcription save hook)
+last_updated: "2026-03-30T13:16:45.185Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 10
+  completed_plans: 9
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hold a key, speak, and have accurate text appear where you need it — zero friction dictation.
-**Current focus:** Phase 05 — companion-shell
+**Current focus:** Phase 06 — history
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 06 (history) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-03-30
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 
 *Updated after each plan completion*
 | Phase 05-companion-shell P02 | 6 | 1 tasks | 1 files |
+| Phase 06-history P01 | 8 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 - [Phase 05-01]: NSWindowDelegate chaining: windowShouldClose returns false + orderOut + 0.1s setActivationPolicy(.accessory) delay
 - [Phase 05-02]: windowShouldClose guards sender === companionWindow so settings/onboarding windows still close normally
 - [Phase 05-02]: disableDockIcon uses 100ms async delay to prevent focus-stealing flicker; openCompanion first-open relies on SwiftUI WindowGroup auto-present on app activate
+- [Phase 06-01]: Save runs BEFORE MainActor.run paste block so persistence succeeds even when autoInsertText is disabled (D-02)
+- [Phase 06-01]: Background ModelContext(container) used per save to avoid cross-thread SwiftData access
+- [Phase 06-01]: cleanupOldEntries() deferred via DispatchQueue.main.async because FlowSpeechApp.init() sets modelContainer after applicationDidFinishLaunching
+- [Phase 06-01]: Source app captured at startRecording() start, not transcription end, so correct app stored even if user switches focus during Whisper API call
 
 ### Pending Todos
 
@@ -85,6 +90,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-30
-Last session: 2026-03-30T09:38:52.721Z
-Stopped at: Checkpoint 05-02 Task 2: human-verify companion lifecycle
+Last session: 2026-03-30T13:16:45.181Z
+Stopped at: Completed 06-01-PLAN.md (Transcription save hook)
 Resume file: None
