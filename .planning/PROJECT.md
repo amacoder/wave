@@ -41,8 +41,8 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 
 - [ ] Windowed companion app with sidebar navigation and dock icon
 - [ ] Transcription history with date groupings and stats
-- [ ] Custom dictionary for vocabulary/term corrections
-- [ ] Snippets for text expansion shortcuts
+- [x] Custom dictionary for vocabulary/term corrections (Phase 7)
+- [x] Snippets for text expansion shortcuts (Phase 7)
 - [ ] Per-entry actions: copy, delete, retry transcript
 
 ### Out of Scope
@@ -84,8 +84,9 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 | Glaido as design reference | Best-in-class UX for push-to-talk dictation apps | — Pending |
 | Game exclusion via app detection | User plays League of Legends; accidental Fn triggers during gaming | Shipped Phase 04 |
 | Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | Shipped Phase 02 |
-| SwiftData over GRDB/raw SQLite | Modern Apple persistence, tight SwiftUI integration, macOS 14+ acceptable | — Pending |
-| Companion app with dock presence | Evolve from menu-bar-only to windowed app matching Flow's UX pattern | — Pending |
+| SwiftData over GRDB/raw SQLite | Modern Apple persistence, tight SwiftUI integration, macOS 14+ acceptable | Shipped Phase 06 |
+| Companion app with dock presence | Evolve from menu-bar-only to windowed app matching Flow's UX pattern | Shipped Phase 05 |
+| Transcription history with auto-save | Every dictation persisted to SwiftData; browse, copy, delete with date grouping and stats | Shipped Phase 06 |
 
 ---
-*Last updated: 2026-03-30 after milestone v1.2 start*
+*Last updated: 2026-03-30 after Phase 06 (History) complete*
