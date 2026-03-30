@@ -1,475 +1,797 @@
 # Architecture Research
 
-**Domain:** macOS menu bar dictation app — v1.1 UI/feature milestone
-**Researched:** 2026-03-26
-**Confidence:** HIGH (codebase read directly; macOS API patterns verified against official docs)
+**Domain:** macOS companion app — v1.2 SwiftData persistence, windowed UI, history, dictionary, snippets
+**Researched:** 2026-03-30
+**Confidence:** HIGH (codebase read directly; SwiftData and macOS API patterns verified against official docs and WWDC materials)
 
 ---
 
-## Current Architecture (Baseline)
+## Existing Architecture Baseline (v1.1)
 
-The existing app has a clean service-oriented structure. Understanding what exists is the prerequisite for knowing what to add vs. modify.
+Before describing what changes, here is the current state that all additions must integrate with.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Entry Point                              │
-│  FlowSpeechApp (@main) → @NSApplicationDelegateAdaptor          │
+│  FlowSpeechApp (@main)  →  @NSApplicationDelegateAdaptor        │
+│  body: Settings { EmptyView() }   ← menu-bar-only, no window   │
 ├─────────────────────────────────────────────────────────────────┤
-│                        AppDelegate                              │
-│  ┌───────────┐  ┌─────────────┐  ┌──────────────────────────┐  │
-│  │ MenuBar   │  │ Hotkey      │  │ Recording Orchestration   │  │
-│  │ Setup     │  │ NSEvent     │  │ start/stop/cancel/        │  │
-│  │ statusItem│  │ flagsChanged│  │ transcribe + overlay mgmt │  │
-│  └───────────┘  └─────────────┘  └──────────────────────────┘  │
+│  AppDelegate (class)                                            │
+│  ├── AppState (ObservableObject) — RecordingPhase, settings     │
+│  ├── HotkeyManager — CGEventTap + NSEvent flagsChanged          │
+│  ├── AudioRecorder — AVFoundation audio capture                 │
+│  ├── WhisperService — URLSession → OpenAI API                   │
+│  ├── TextCleanupService — GPT-4o-mini post-processing           │
+│  ├── TextInserter — NSPasteboard + CGEvent Cmd+V                │
+│  ├── AppExclusionService — NSWorkspace + CGWindowListCopyInfo   │
+│  └── KeychainManager — SecItem API key storage                  │
 ├─────────────────────────────────────────────────────────────────┤
-│                        Services                                 │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────────┐   │
-│  │ AudioRecorder │  │ WhisperService│  │ TextInserter      │   │
-│  │ AVFoundation  │  │ URLSession    │  │ NSPasteboard +    │   │
-│  │ audio capture │  │ Whisper API   │  │ CGEvent Cmd+V     │   │
-│  └───────────────┘  └───────────────┘  └───────────────────┘   │
-│  ┌───────────────┐  ┌───────────────┐                           │
-│  │ HotkeyManager │  │KeychainManager│                           │
-│  │ CGEventTap    │  │ SecItem API   │                           │
-│  └───────────────┘  └───────────────┘                           │
+│  Windows (all AppDelegate-owned NSWindow instances)             │
+│  ├── recordingWindow — borderless floating pill overlay         │
+│  ├── settingsWindow — Settings tabbed view (5 tabs)             │
+│  └── onboarding — one-time wizard                               │
 ├─────────────────────────────────────────────────────────────────┤
-│                        State                                    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ AppState: ObservableObject                              │    │
-│  │ isRecording, isTranscribing, audioLevels, settings      │    │
-│  └─────────────────────────────────────────────────────────┘    │
+│  Persistence                                                    │
+│  └── UserDefaults only — settings, hotkey prefs, language       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+The transcription pipeline in `AppDelegate.transcribe()` is the central point where all v1.2 new features hook in:
+
+```
+AudioRecorder → WhisperService → TextCleanupService → TextInserter
+```
+
+---
+
+## Target Architecture (v1.2)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FlowSpeechApp (@main)                                          │
+│  ├── modelContainer: ModelContainer  ← created in init()        │
+│  ├── @NSApplicationDelegateAdaptor AppDelegate                  │
+│  ├── WindowGroup("Wave", id: "main") { CompanionAppView }       │
+│  │     .modelContainer(modelContainer)                          │
+│  └── Settings { EmptyView() }                                   │
 ├─────────────────────────────────────────────────────────────────┤
-│                        Views                                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │RecordingOver-│  │ SettingsView │  │ OnboardingView       │  │
-│  │layView (NSW) │  │ TabView 5tab │  │ 5-step wizard        │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ MenuBarPopoverView                                       │   │
-│  └──────────────────────────────────────────────────────────┘   │
+│  AppDelegate (modified)                                         │
+│  ├── All existing services (unchanged)                          │
+│  ├── historyService: HistoryService  ← NEW                      │
+│  └── transcribe() pipeline with 3 new hooks:                   │
+│      1. Dictionary prompt injection → WhisperService            │
+│      2. Snippet expansion → TextInserter (post-transcription)   │
+│      3. History save → HistoryService (after final text ready)  │
+├─────────────────────────────────────────────────────────────────┤
+│  Services/ (new additions)                                      │
+│  ├── HistoryService — SwiftData background save + fetch         │
+│  ├── DictionaryService — loads custom words → Whisper prompt    │
+│  └── SnippetService — trigger matching + expansion              │
+├─────────────────────────────────────────────────────────────────┤
+│  Models/ (new — SwiftData @Model types)                         │
+│  ├── TranscriptionEntry — id, text, rawText, date, wordCount    │
+│  ├── DictionaryWord — id, word, createdAt                       │
+│  └── Snippet — id, trigger, expansion, createdAt               │
+├─────────────────────────────────────────────────────────────────┤
+│  Views/ (new additions)                                         │
+│  ├── CompanionAppView — NavigationSplitView root               │
+│  ├── HomeView — transcription history, stats, per-entry actions │
+│  ├── DictionaryView — custom word list CRUD                     │
+│  └── SnippetsView — trigger/expansion pair CRUD                │
+├─────────────────────────────────────────────────────────────────┤
+│  Persistence                                                    │
+│  ├── UserDefaults — existing settings (unchanged)               │
+│  └── SwiftData SQLite store — history, dictionary, snippets     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## New Feature Integration Map
+## Component Responsibilities
 
-This answers the core question: what changes vs. what is added new.
+### New Components
 
-### Feature 1: Flow Bar Overlay Redesign (UI Revamp)
+| Component | Responsibility | Implementation |
+|-----------|----------------|----------------|
+| `HistoryService` | Write entries after transcription; provide read API for HomeView | `@ModelActor` wrapping a background ModelContext |
+| `DictionaryService` | Load all DictionaryWords; build prompt string for WhisperService | Fetches from ModelContext; returns `String` |
+| `SnippetService` | Check final text for trigger phrases; expand to full text | Pure Swift string scan; no persistence of its own |
+| `TranscriptionEntry` | Persisted record of one dictation session | `@Model` class with text, rawText, date, wordCount, duration |
+| `DictionaryWord` | One user-defined vocabulary term | `@Model` class with word string and createdAt date |
+| `Snippet` | One trigger → expansion mapping | `@Model` class with trigger, expansion, createdAt |
+| `CompanionAppView` | Root NavigationSplitView with sidebar | SwiftUI WindowGroup scene |
+| `HomeView` | Display history list with date sections and stats | `@Query` for TranscriptionEntry |
+| `DictionaryView` | CRUD for DictionaryWord entries | `@Query` + `@Environment(\.modelContext)` |
+| `SnippetsView` | CRUD for Snippet entries | `@Query` + `@Environment(\.modelContext)` |
 
-**What changes:** `RecordingOverlayView` is a full redesign — same file, new implementation.
+### Modified Components
 
-**What changes in AppDelegate:** The `showRecordingOverlay()` window positioning logic needs updating. Current position is `screenFrame.maxY - height - 100` (100px from top). The new "Flow Bar" should appear at the **bottom-center** of screen, approximately 40px from the bottom edge, matching Wispr Flow's pill position. This is a 2-line change in `AppDelegate.showRecordingOverlay()`.
-
-**Window size:** Current is 200×80. Flow Bar pill is wider and shorter — approximately 340×56. The NSWindow `contentRect` in `showRecordingOverlay()` must match.
-
-**New state needed in AppState:** A `recordingPhase` enum to drive state-machine animations.
-
-```swift
-enum RecordingPhase {
-    case idle       // overlay hidden
-    case recording  // mic active, waveform animating
-    case transcribing // spinner, "Transcribing..."
-    case done       // brief "Done" flash before hiding
-}
-```
-
-`AppState.isRecording` + `AppState.isTranscribing` booleans already map to 3 of these phases; a `done` phase just needs a brief display window (0.8s) before `hideRecordingOverlay()` is called. This `done` flash replaces immediately hiding the overlay on transcription success.
-
-**Integration point:** AppDelegate calls `hideRecordingOverlay()` immediately on transcription success today. Add a `showCompletionBriefly()` helper that sets `appState.recordingPhase = .done`, waits 0.8s via `DispatchQueue.main.asyncAfter`, then hides.
+| Component | What Changes |
+|-----------|-------------|
+| `FlowSpeechApp` | Add ModelContainer creation; add WindowGroup for companion app |
+| `AppDelegate` | Add `historyService`, wire dictionary prompt and snippet expansion into `transcribe()` |
+| `AppState` | Add `showInDock: Bool` (already exists — needs to actually drive activation policy) |
 
 ---
 
-### Feature 2: App Exclusion (Game/Fullscreen Suppression)
+## SwiftData Integration Pattern
 
-**Where it lives:** `AppDelegate.handleFlagsChanged()` — the hotkey handler. This is the single right place: before calling `startRecording()`, check whether the frontmost app is excluded.
+### ModelContainer Ownership
 
-**API approach (MEDIUM confidence — verified against Apple docs):**
+The ModelContainer must be created in `FlowSpeechApp.init()` and shared via `.modelContainer()` modifier. This is the only approach that shares one SQLite file between the WindowGroup views and the background service contexts.
+
+**Confidence: HIGH** — verified against Apple's official SwiftData documentation and WWDC23 "Dive deeper into SwiftData" session.
 
 ```swift
-// Check frontmost app at hotkey-down moment
-func isFrontmostAppExcluded() -> Bool {
-    guard let app = NSWorkspace.shared.frontmostApplication else { return false }
-    let bundleID = app.bundleIdentifier ?? ""
-    let name = app.localizedName ?? ""
-    // Check user exclusion list (bundle IDs stored in UserDefaults)
-    let excludedIDs = UserDefaults.standard.stringArray(forKey: "excludedBundleIDs") ?? []
-    if excludedIDs.contains(bundleID) { return true }
-    // Auto-exclude fullscreen apps if setting enabled
-    if appState.excludeFullscreenApps {
-        return isAppFullscreen(app)
+@main
+struct FlowSpeechApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    let modelContainer: ModelContainer
+
+    init() {
+        do {
+            let schema = Schema([
+                TranscriptionEntry.self,
+                DictionaryWord.self,
+                Snippet.self
+            ])
+            modelContainer = try ModelContainer(for: schema)
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
     }
-    return false
-}
 
-func isAppFullscreen(_ app: NSRunningApplication) -> Bool {
-    // CGWindowListCopyWindowInfo approach: check if any window of this app
-    // fills the main screen completely (kCGWindowBounds matches screen bounds)
-    let screenBounds = NSScreen.main?.frame ?? .zero
-    let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
-    return windowList.contains { info in
-        guard let ownerPID = info[kCGWindowOwnerPID as String] as? Int32,
-              ownerPID == app.processIdentifier,
-              let bounds = info[kCGWindowBounds as String] as? [String: CGFloat] else { return false }
-        let w = bounds["Width"] ?? 0
-        let h = bounds["Height"] ?? 0
-        return w >= screenBounds.width && h >= screenBounds.height
+    var body: some Scene {
+        WindowGroup("Wave", id: "main") {
+            CompanionAppView()
+        }
+        .modelContainer(modelContainer)
+
+        Settings {
+            EmptyView()
+        }
     }
 }
 ```
 
-**Caveats:** CGWindowListCopyWindowInfo requires no special entitlements for window metadata (only screen recording permission is needed for content capture, not metadata). Window bounds check is a reliable proxy for fullscreen games — games that go exclusive fullscreen create a window exactly matching display dimensions.
+### Sharing the Container with AppDelegate
 
-**New AppState fields needed:**
+AppDelegate creates services before the scene is rendered. Pass the container via the adaptor reference after `applicationDidFinishLaunching`:
+
 ```swift
-@Published var excludedAppBundleIDs: [String] = []   // user's exclusion list
-@Published var excludeFullscreenApps: Bool = true     // auto-exclude fullscreen
+// In AppDelegate.applicationDidFinishLaunching:
+// Access via: (NSApp.delegate as? AppDelegate)?.historyService
+// But simpler: inject in FlowSpeechApp after init
+
+// In FlowSpeechApp.init():
+// After creating modelContainer, inject into appDelegate via the adaptor
+// appDelegate.historyService = HistoryService(modelContainer: modelContainer)
 ```
 
-**New Settings tab:** Add an "Exclusions" tab to SettingsView (6th tab, or replace the sparse "About" tab with a combined About + Exclusions, or add it inline on General tab). Recommend: add as a 6th tab since SettingsView already uses TabView.
+The cleanest approach: AppDelegate creates HistoryService with a deferred container. FlowSpeechApp sets the container after the adaptor is initialized.
 
-**No HotkeyManager changes needed.** The CGEventTap in HotkeyManager fires the callback regardless — the exclusion check happens in AppDelegate's callback, not in HotkeyManager itself. This keeps HotkeyManager focused on event detection only.
-
----
-
-### Feature 3: Clipboard Persistence
-
-**What changes:** `TextInserter.insertText()` — a 5-line change removing the restore block.
-
-**Current flow:**
-```
-Save oldContent → Set transcription to clipboard → Cmd+V → Restore oldContent after 0.5s
-```
-
-**New flow:**
-```
-Save oldContent (optional — for user display only) → Set transcription to clipboard → Cmd+V → DO NOT restore
-```
-
-The clipboard restore DispatchQueue block at line 38-43 of TextInserter.swift is deleted outright. The transcription remains on the clipboard indefinitely (until the user copies something else), enabling manual Cmd+V if auto-insert failed or if no text field was focused.
-
-**Edge case to handle:** If `autoInsertText` is OFF, the transcription should still be placed on the clipboard (so the user can paste manually). Current code only sets clipboard as a precursor to Cmd+V insertion. The clipboard-write step should be separated from the paste step.
-
-**Revised TextInserter structure:**
 ```swift
-func insertText(_ text: String) {
-    // Always put text on clipboard (user can re-paste if needed)
-    placeOnClipboard(text)
-
-    guard appState would want to auto-insert else { return }
-    clearModifierKeys()
-    usleep(50000)
-    simulatePaste()
-    // No restore. Transcription persists on clipboard.
-}
-
-func placeOnClipboard(_ text: String) {
-    NSPasteboard.general.clearContents()
-    NSPasteboard.general.setString(text, forType: .string)
+// FlowSpeechApp
+init() {
+    // ...create modelContainer...
+    // Wire into AppDelegate after adaptor exists:
+    appDelegate.configure(modelContainer: modelContainer)
 }
 ```
 
-**AppState integration:** `AppState.lastTranscription` already stores the transcription text for display in the menu bar popover. No new state needed for clipboard persistence — the NSPasteboard IS the persistence.
+### Background Save (HistoryService)
 
----
+AppDelegate's `transcribe()` runs in a Swift `Task` (async context). SwiftData's `ModelContext` is not Sendable — it must be used on its actor. Use `@ModelActor` macro for background operations.
 
-### Feature 4: Animation Polish
+**Confidence: HIGH** — verified against "Use SwiftData like a boss" (Medium, 2024) and Apple Developer Forums thread/763500.
 
-**What changes:** `RecordingOverlayView` internals only. No AppDelegate or service changes.
-
-**Pattern:** Use SwiftUI `.transition()` + `withAnimation(.spring(duration: 0.4, bounce: 0.15))` for state phase transitions. The overlay window itself appears/disappears via `NSWindow.orderFront/orderOut` (AppKit calls from AppDelegate) — for the window-level appear/disappear animation, use `NSWindow.animator()` with alpha.
-
-**Window appear animation:**
 ```swift
-// In showRecordingOverlay():
-recordingWindow?.alphaValue = 0
-recordingWindow?.orderFront(nil)
-NSAnimationContext.runAnimationGroup { context in
-    context.duration = 0.25
-    recordingWindow?.animator().alphaValue = 1.0
-}
+@ModelActor
+actor HistoryService {
+    func save(text: String, rawText: String, duration: TimeInterval, wordCount: Int) async throws {
+        let entry = TranscriptionEntry(
+            text: text,
+            rawText: rawText,
+            date: Date(),
+            duration: duration,
+            wordCount: wordCount
+        )
+        modelContext.insert(entry)
+        try modelContext.save()
+    }
 
-// In hideRecordingOverlay():
-NSAnimationContext.runAnimationGroup({ context in
-    context.duration = 0.2
-    recordingWindow?.animator().alphaValue = 0.0
-}) { [weak self] in
-    self?.recordingWindow?.orderOut(nil)
-    self?.recordingWindow?.alphaValue = 1.0 // reset for next show
+    func recentEntries(limit: Int = 100) async throws -> [TranscriptionEntry] {
+        let descriptor = FetchDescriptor<TranscriptionEntry>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        return try modelContext.fetch(descriptor)
+    }
 }
 ```
 
-**State transition animations inside the view:** Use `RecordingPhase` from AppState and SwiftUI's conditional rendering with `.transition(.opacity.combined(with: .scale(scale: 0.95)))`.
+### Views Use @Query Directly
+
+Views should use SwiftData's `@Query` property wrapper — they get the main context via the environment from `.modelContainer()` on the WindowGroup.
+
+```swift
+struct HomeView: View {
+    @Query(sort: \TranscriptionEntry.date, order: .reverse) var entries: [TranscriptionEntry]
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        List(entries) { entry in
+            EntryRowView(entry: entry)
+        }
+    }
+}
+```
 
 ---
 
-## Modified vs. New Component Summary
+## Windowed App Integration
 
-| Component | Action | Scope of Change |
-|-----------|--------|-----------------|
-| `AppDelegate.showRecordingOverlay()` | Modify | Window position (top → bottom), window size, alpha animation |
-| `AppDelegate.handleFlagsChanged()` | Modify | Add exclusion check before `startRecording()` |
-| `AppDelegate.transcribe()` | Modify | Replace `hideRecordingOverlay()` with `showCompletionBriefly()` |
-| `AppState` | Modify | Add `recordingPhase`, `excludedAppBundleIDs`, `excludeFullscreenApps` |
-| `TextInserter.insertText()` | Modify | Remove clipboard restore block; separate clipboard-write from paste |
-| `RecordingOverlayView` | Redesign | Full blue palette redesign, pill shape, phase-driven animation |
-| `SettingsView` | Modify | Add Exclusions tab (new tab or expand General tab) |
-| `AppExclusionService` | New | Encapsulates `isFrontmostAppExcluded()` and `isAppFullscreen()` logic |
-| `DesignSystem.swift` | New | Color constants, typography, shared style values for blue palette |
+### Activation Policy (Dock Icon)
+
+The existing `AppState.showInDock: Bool` setting exists but is not yet wired to actual dock visibility. In v1.2, the companion window needs dock presence to be reachable. The pattern:
+
+- Default: `.accessory` policy (menu-bar-only, existing behavior)
+- When companion window opens: call `NSApp.setActivationPolicy(.regular)`
+- When companion window closes (and no others open): call `NSApp.setActivationPolicy(.accessory)`
+
+**Confidence: MEDIUM** — NSApp.setActivationPolicy is well-documented, but toggling at runtime has a known quirk where all windows may briefly hide. Workaround: delay 0.3s after switching to `.regular` before calling `makeKeyAndOrderFront`.
+
+```swift
+// In AppDelegate — open companion app
+func openCompanionApp() {
+    NSApp.setActivationPolicy(.regular)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // Open the WindowGroup window via openWindow environment action
+        // or direct NSWindow manipulation
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+```
+
+### WindowGroup vs. Window Scene
+
+Use `WindowGroup` not `Window` (the single-instance variant). `WindowGroup` is the standard for document-style companion apps and allows the system to manage window restoration. The "Wave" companion app is not a document app, but `WindowGroup` with a unique `id:` parameter behaves like a single named window on macOS.
+
+### Sidebar Structure
+
+`NavigationSplitView` with three items: Home, Dictionary, Snippets. This is the standard macOS sidebar navigation pattern (Files, Mail, etc.).
+
+```swift
+struct CompanionAppView: View {
+    @State private var selection: SidebarItem? = .home
+
+    var body: some View {
+        NavigationSplitView {
+            List(SidebarItem.allCases, selection: $selection) { item in
+                Label(item.title, systemImage: item.icon)
+            }
+            .listStyle(.sidebar)
+        } detail: {
+            switch selection {
+            case .home: HomeView()
+            case .dictionary: DictionaryView()
+            case .snippets: SnippetsView()
+            case nil: HomeView()
+            }
+        }
+    }
+}
+
+enum SidebarItem: String, CaseIterable, Identifiable {
+    case home, dictionary, snippets
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+    var icon: String {
+        switch self {
+        case .home: return "clock"
+        case .dictionary: return "character.book.closed"
+        case .snippets: return "text.badge.plus"
+        }
+    }
+}
+```
 
 ---
 
-## Recommended File Structure Changes
+## Dictionary → Whisper Integration
+
+The Whisper API `prompt` parameter (already wired in `WhisperService.transcribe()` as an optional `String?`) is the correct injection point. The dictionary feeds a comma-separated or sentence-format prompt.
+
+**Confidence: HIGH** — WhisperService already accepts `prompt: String?`. OpenAI docs confirm prompt parameter improves recognition of custom words (verified against https://platform.openai.com/docs/guides/speech-to-text).
+
+**Key constraint:** Whisper-1 only uses the final 224 tokens of the prompt. Keep dictionary prompts short — recommend max 50 words. GPT-4o-transcribe handles longer prompts better but the same limit principle applies.
+
+### DictionaryService
+
+```swift
+class DictionaryService {
+    private let modelContainer: ModelContainer
+
+    func buildPrompt() async -> String? {
+        let context = ModelContext(modelContainer)
+        let descriptor = FetchDescriptor<DictionaryWord>(
+            sortBy: [SortDescriptor(\.word)]
+        )
+        guard let words = try? context.fetch(descriptor), !words.isEmpty else {
+            return nil
+        }
+        // Format as a natural sentence to help Whisper recognize the words
+        return words.map(\.word).joined(separator: ", ")
+    }
+}
+```
+
+### Integration Point in AppDelegate.transcribe()
+
+```swift
+// In transcribe(audioURL:), before calling whisperService.transcribe():
+let dictionaryPrompt = await dictionaryService.buildPrompt()
+
+let transcription = try await whisperService.transcribe(
+    audioURL: audioURL,
+    apiKey: apiKey,
+    model: appState.selectedModel,
+    language: appState.language == "auto" ? nil : appState.language,
+    prompt: dictionaryPrompt  // passes nil if dictionary is empty — no change to existing behavior
+)
+```
+
+The `prompt:` parameter is already accepted by `WhisperService.transcribe()` — this is a zero-structural-change integration. Only the call site in `AppDelegate` needs updating.
+
+---
+
+## Snippets Integration
+
+Snippets are text expansion: if the transcribed text contains a trigger phrase, replace it with the full expansion. This happens **after** transcription and cleanup, **before** `textInserter.insertText()`.
+
+### SnippetService
+
+```swift
+class SnippetService {
+    private let modelContainer: ModelContainer
+
+    // Returns expanded text if any snippet trigger matched; otherwise original text
+    func expand(text: String) async -> String {
+        let context = ModelContext(modelContainer)
+        let descriptor = FetchDescriptor<Snippet>()
+        guard let snippets = try? context.fetch(descriptor), !snippets.isEmpty else {
+            return text
+        }
+
+        var result = text
+        for snippet in snippets {
+            // Case-insensitive whole-word match
+            result = result.replacingOccurrences(
+                of: snippet.trigger,
+                with: snippet.expansion,
+                options: [.caseInsensitive]
+            )
+        }
+        return result
+    }
+}
+```
+
+### Integration Point in AppDelegate.transcribe()
+
+```swift
+// After cleanup, before text insertion:
+var finalText = transcription
+if appState.smartCleanup {
+    finalText = await cleanupService.cleanup(text: transcription, apiKey: apiKey)
+}
+
+// Snippet expansion — new step
+finalText = await snippetService.expand(text: finalText)
+
+// History save — new step
+try? await historyService.save(
+    text: finalText,
+    rawText: transcription,
+    duration: recordingDuration,
+    wordCount: finalText.split(separator: " ").count
+)
+
+// Existing text insertion (unchanged)
+if appState.autoInsertText {
+    textInserter.insertText(finalText)
+}
+```
+
+---
+
+## Data Models
+
+### TranscriptionEntry
+
+```swift
+@Model
+final class TranscriptionEntry {
+    var id: UUID
+    var text: String          // final text after cleanup + snippet expansion
+    var rawText: String       // original Whisper output before any processing
+    var date: Date
+    var duration: TimeInterval  // recording duration in seconds
+    var wordCount: Int
+
+    init(text: String, rawText: String, date: Date = .now,
+         duration: TimeInterval = 0, wordCount: Int = 0) {
+        self.id = UUID()
+        self.text = text
+        self.rawText = rawText
+        self.date = date
+        self.duration = duration
+        self.wordCount = wordCount
+    }
+}
+```
+
+### DictionaryWord
+
+```swift
+@Model
+final class DictionaryWord {
+    var id: UUID
+    var word: String
+    var createdAt: Date
+
+    init(word: String) {
+        self.id = UUID()
+        self.word = word
+        self.createdAt = .now
+    }
+}
+```
+
+### Snippet
+
+```swift
+@Model
+final class Snippet {
+    var id: UUID
+    var trigger: String     // what the user says
+    var expansion: String   // what gets inserted
+    var createdAt: Date
+
+    init(trigger: String, expansion: String) {
+        self.id = UUID()
+        self.trigger = trigger
+        self.expansion = expansion
+        self.createdAt = .now
+    }
+}
+```
+
+---
+
+## Recommended File Structure (v1.2 additions)
 
 ```
 FlowSpeech/
-├── AppDelegate.swift            (modify — overlay positioning, exclusion check, done phase)
-├── FlowSpeechApp.swift          (modify — add recordingPhase to AppState)
-├── DesignSystem.swift           (NEW — color palette, spacing, typography constants)
+├── AppDelegate.swift            (modify — wire history, dictionary, snippets into transcribe())
+├── FlowSpeechApp.swift          (modify — add ModelContainer, WindowGroup)
+├── DesignSystem.swift           (no change)
+├── Models/                      (NEW folder)
+│   ├── TranscriptionEntry.swift
+│   ├── DictionaryWord.swift
+│   └── Snippet.swift
 ├── Services/
 │   ├── AudioRecorder.swift      (no change)
-│   ├── WhisperService.swift     (no change)
-│   ├── TextInserter.swift       (modify — remove clipboard restore)
+│   ├── WhisperService.swift     (no change — prompt param already exists)
+│   ├── TextCleanupService.swift (no change)
+│   ├── TextInserter.swift       (no change)
 │   ├── HotkeyManager.swift      (no change)
 │   ├── KeychainManager.swift    (no change)
-│   └── AppExclusionService.swift  (NEW — fullscreen detection + exclusion list logic)
+│   ├── AppExclusionService.swift (no change)
+│   ├── HistoryService.swift     (NEW — @ModelActor, background save/fetch)
+│   ├── DictionaryService.swift  (NEW — builds Whisper prompt from DictionaryWords)
+│   └── SnippetService.swift     (NEW — trigger matching + text expansion)
 └── Views/
-    ├── RecordingOverlayView.swift  (redesign — new pill UI, phase animations)
-    ├── SettingsView.swift          (modify — add Exclusions tab)
-    ├── MenuBarPopoverView.swift    (modify — blue palette)
-    ├── OnboardingView.swift        (modify — blue palette)
-    └── ExclusionListView.swift     (NEW — UI for managing excluded apps)
+    ├── RecordingOverlayView.swift   (no change)
+    ├── SettingsView.swift           (no change)
+    ├── MenuBarPopoverView.swift     (no change)
+    ├── OnboardingView.swift         (no change)
+    ├── ExclusionSettingsTab.swift   (no change)
+    ├── CompanionAppView.swift       (NEW — NavigationSplitView root)
+    ├── HomeView.swift               (NEW — history list with date groupings + stats)
+    ├── DictionaryView.swift         (NEW — word list CRUD)
+    └── SnippetsView.swift           (NEW — snippet pair CRUD)
 ```
 
 ---
 
 ## Data Flow
 
-### Recording Flow (with new features)
+### Transcription Pipeline (v1.2 — annotated)
 
 ```
-User holds Fn key
+User holds hotkey
     ↓
-AppDelegate.handleFlagsChanged()
-    ↓
-AppExclusionService.isFrontmostAppExcluded()
-    ├─ YES → return (hotkey suppressed, no recording)
-    └─ NO  → startRecording()
-                ↓
-            AppState.recordingPhase = .recording
-            showRecordingOverlay() [with alpha fade-in]
-            AudioRecorder.startRecording()
+AppDelegate.startRecording()
+AppState.phase = .recording
+AudioRecorder.startRecording()
 
-User releases Fn key
+User releases hotkey
     ↓
 AppDelegate.stopRecordingAndTranscribe()
-    ↓
-AppState.recordingPhase = .transcribing
 AudioRecorder.stopRecording() → audioURL
-WhisperService.transcribe(audioURL) [async]
-    ↓
-TextInserter.placeOnClipboard(transcription)  ← clipboard persistence
-TextInserter.simulatePaste()                   ← if autoInsert on
-    ↓
-AppState.recordingPhase = .done               ← new "done" flash
-DispatchQueue.asyncAfter(0.8s) {
-    hideRecordingOverlay() [with alpha fade-out]
-    AppState.recordingPhase = .idle
-}
+
+                              ┌──────────────────────────────────┐
+                              │  DictionaryService.buildPrompt() │
+                              │  fetch DictionaryWords → String? │
+                              └──────────────┬───────────────────┘
+                                             ↓
+WhisperService.transcribe(audioURL, prompt: dictionaryPrompt)
+    → rawTranscription: String
+
+TextCleanupService.cleanup(rawTranscription) [if smartCleanup enabled]
+    → cleanedText: String
+
+                              ┌──────────────────────────────────┐
+                              │  SnippetService.expand(text)     │
+                              │  scan for trigger phrases        │
+                              └──────────────┬───────────────────┘
+                                             ↓
+                                    finalText: String
+
+                              ┌──────────────────────────────────┐
+                              │  HistoryService.save(finalText)  │
+                              │  insert TranscriptionEntry       │
+                              │  @ModelActor background context  │
+                              └──────────────────────────────────┘
+                                             ↓
+TextInserter.insertText(finalText) [if autoInsertText]
+AppState.phase = .done → .idle
+HomeView auto-refreshes via @Query (main context notified by SwiftData merge)
 ```
 
-### App Exclusion Data Flow
+### ModelContainer Flow
 
 ```
-UserDefaults["excludedBundleIDs"] ← persisted list
-    ↓ (loaded at startup)
-AppState.excludedAppBundleIDs: [String]
-    ↓ (read at hotkey-down)
-AppExclusionService.isFrontmostAppExcluded()
-    → NSWorkspace.shared.frontmostApplication
-    → CGWindowListCopyWindowInfo (for fullscreen check)
-    → returns Bool
+FlowSpeechApp.init()
+    └── ModelContainer(schema: [TranscriptionEntry, DictionaryWord, Snippet])
+            │
+            ├── .modelContainer(modelContainer) on WindowGroup
+            │       → injects into SwiftUI environment
+            │       → @Query in HomeView, DictionaryView, SnippetsView
+            │       → @Environment(\.modelContext) for inserts/deletes
+            │
+            └── injected into AppDelegate via configure(modelContainer:)
+                    → HistoryService(@ModelActor) ← background save
+                    → DictionaryService ← builds prompt (reads only)
+                    → SnippetService ← reads snippets for expansion
 ```
 
----
+### Dock Icon State Flow
 
-## Architectural Patterns
-
-### Pattern 1: Phase-Driven Overlay State Machine
-
-**What:** Replace dual `isRecording` + `isTranscribing` booleans with a single `RecordingPhase` enum in AppState.
-
-**When to use:** When a UI element needs to render different visual states that transition in a defined sequence (idle → recording → transcribing → done → idle).
-
-**Trade-offs:**
-- Pro: Single source of truth for all overlay rendering; eliminates impossible boolean combos (`isRecording=true` AND `isTranscribing=true`)
-- Pro: Enables clean `switch` in SwiftUI view for phase-driven rendering
-- Con: Requires updating all existing callers of `isRecording` and `isTranscribing` (only ~6 call sites in AppDelegate + SettingsView)
-
-```swift
-// AppState addition
-@Published var recordingPhase: RecordingPhase = .idle
-
-// RecordingOverlayView body
-switch appState.recordingPhase {
-case .idle: EmptyView()
-case .recording: RecordingPillView(levels: appState.audioLevels)
-case .transcribing: TranscribingPillView()
-case .done: DonePillView(text: appState.lastTranscription ?? "Done")
-}
 ```
+App launch
+    → NSApp.setActivationPolicy(.accessory)   ← menu-bar-only, no dock icon
 
-The existing `isRecording` and `isTranscribing` booleans can remain for backward compatibility with SettingsView and menu bar icon code — derive them from `recordingPhase`:
-```swift
-var isRecording: Bool { recordingPhase == .recording }
-var isTranscribing: Bool { recordingPhase == .transcribing }
+User clicks menu bar item → "Open Wave"
+    → AppDelegate.openCompanionApp()
+    → NSApp.setActivationPolicy(.regular)
+    → delay 0.1s
+    → activate WindowGroup window
+    → NSApp.activate()
+
+User closes companion window
+    → windowWillClose notification
+    → if no other windows open: NSApp.setActivationPolicy(.accessory)
 ```
-
-### Pattern 2: Service Extraction for Exclusion Logic
-
-**What:** Pull app exclusion logic into `AppExclusionService` rather than embedding it in AppDelegate.
-
-**When to use:** When a concern has its own state (the exclusion list), its own persistence (UserDefaults), and its own macOS API calls (NSWorkspace, CGWindowListCopyWindowInfo).
-
-**Trade-offs:**
-- Pro: AppDelegate stays focused on orchestration; exclusion logic is testable in isolation
-- Pro: ExclusionListView can be injected with `AppExclusionService` directly for live preview
-- Con: One more object to pass around (minor at this app scale)
-
-### Pattern 3: Separation of Clipboard-Write from Paste
-
-**What:** TextInserter currently conflates "put text on clipboard" with "simulate paste." Split into two operations.
-
-**When to use:** When the same data-write has multiple downstream consumers (clipboard persistence for manual re-paste vs. auto-paste for cursor insertion).
-
-**Trade-offs:**
-- Pro: Clipboard persistence falls out naturally — write always happens; paste is conditional
-- Pro: If paste fails (no focused field), user can still manually Cmd+V the transcription
-- Con: None — this is strictly a loosening of coupling
-
----
-
-## Integration Points
-
-### Internal Component Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| AppDelegate ↔ AppExclusionService | Direct method call | Synchronous check at hotkey-down; must be fast (<1ms) |
-| AppDelegate ↔ RecordingOverlayView | Via AppState (ObservableObject) | No direct coupling; overlay reacts to `recordingPhase` |
-| AppDelegate ↔ TextInserter | Direct method call | `insertText()` or `placeOnClipboard()` separately |
-| ExclusionListView ↔ AppExclusionService | Shared reference or via AppState | View modifies `excludedBundleIDs` list |
-| SettingsView ↔ AppState | @EnvironmentObject | Existing pattern, no change needed |
-
-### External API Boundaries
-
-| API | Used By | Notes |
-|-----|---------|-------|
-| `NSWorkspace.shared.frontmostApplication` | AppExclusionService | Returns `NSRunningApplication`; always available, no permission required |
-| `CGWindowListCopyWindowInfo` | AppExclusionService | Returns window metadata; no screen recording permission required for bounds/owner only |
-| `NSWorkspace.shared.runningApplications` | ExclusionListView | For "pick from running apps" exclusion UI |
-| `NSPasteboard.general` | TextInserter | Existing usage; remove the restore block |
-| `NSAnimationContext` | AppDelegate | Window alpha animation for overlay appear/disappear |
 
 ---
 
 ## Build Order (Dependency-Aware)
 
-The four features have dependencies between them. Build in this order:
+Dependencies flow: Models → Services → AppDelegate wiring → Views → WindowGroup scene.
 
-**Phase 1 — Foundation (no user-visible change)**
-1. Add `DesignSystem.swift` with color constants (all other UI work depends on this)
-2. Add `RecordingPhase` enum to AppState, derive `isRecording`/`isTranscribing` from it
-3. Update AppDelegate to drive `recordingPhase` through all transitions
+### Step 1 — Data Models (no UI, no AppDelegate changes)
 
-**Phase 2 — Clipboard Persistence (small, high-value, isolated)**
-4. Modify `TextInserter.insertText()` to remove restore block and separate clipboard-write from paste
-5. Verify: transcription stays on clipboard after successful paste; manual Cmd+V still works
+1. Create `Models/TranscriptionEntry.swift` (`@Model` class)
+2. Create `Models/DictionaryWord.swift` (`@Model` class)
+3. Create `Models/Snippet.swift` (`@Model` class)
 
-**Phase 3 — Overlay Redesign + Animations**
-6. Redesign `RecordingOverlayView` with blue palette, pill shape, phase-driven rendering
-7. Update AppDelegate `showRecordingOverlay()` for bottom positioning and alpha fade animations
-8. Add "done" flash phase with 0.8s auto-hide
+**Why first:** Everything downstream depends on these types. Zero risk to existing functionality.
 
-**Phase 4 — App Exclusion**
-9. Create `AppExclusionService.swift`
-10. Add exclusion check to `AppDelegate.handleFlagsChanged()`
-11. Add `ExclusionListView.swift` and wire into SettingsView as new tab
+### Step 2 — ModelContainer Setup
 
-**Rationale for order:**
-- DesignSystem first because both overlay redesign and settings updates reference the same colors
-- RecordingPhase enum before overlay redesign because the view's structure depends on it
-- Clipboard persistence is independent and low-risk; ship it early
-- App exclusion last because it requires a new Settings tab (more UI surface) and the CGWindowListCopyWindowInfo path needs testing
+4. Modify `FlowSpeechApp.swift`: create `ModelContainer` in `init()`, add `WindowGroup` scene with `.modelContainer()`
+5. Add `AppDelegate.configure(modelContainer:)` method (called from FlowSpeechApp after adaptor init)
+
+**Why second:** Services need the container reference. The WindowGroup can exist before views are written — it will just show an empty view until Step 5.
+
+### Step 3 — HistoryService
+
+6. Create `Services/HistoryService.swift` with `@ModelActor` and `save()` method
+7. Wire into `AppDelegate.transcribe()`: call `historyService.save()` after final text is ready
+
+**Why third:** History save is purely additive to the pipeline. No existing behavior changes. Verify entries appear in the SQLite store using Xcode's data model inspector before building any UI.
+
+### Step 4 — Dictionary Feature (end-to-end before any UI polish)
+
+8. Create `Services/DictionaryService.swift`
+9. Wire into `AppDelegate.transcribe()`: call `dictionaryService.buildPrompt()`, pass to `whisperService.transcribe()`
+10. Create `Views/DictionaryView.swift` (CRUD for DictionaryWord)
+
+**Why fourth:** Dictionary has a complete user-visible loop (add word → dictate → see improvement). Building the view before history UI lets you test the Whisper prompt integration with real audio.
+
+### Step 5 — Snippets Feature
+
+11. Create `Services/SnippetService.swift`
+12. Wire into `AppDelegate.transcribe()`: call `snippetService.expand()` after cleanup
+13. Create `Views/SnippetsView.swift` (CRUD for Snippet pairs)
+
+**Why fifth:** Depends on Step 3 (history should save the expanded text, not pre-expansion). Independent of dictionary.
+
+### Step 6 — Companion App Window + HomeView
+
+14. Create `Views/CompanionAppView.swift` (NavigationSplitView root)
+15. Create `Views/HomeView.swift` (history list with date groupings and stats)
+16. Wire dock icon toggle in AppDelegate (openCompanionApp, windowWillClose handler)
+17. Add "Open Wave" menu bar item pointing to openCompanionApp
+
+**Why last:** HomeView is the most complex view (grouping, stats, per-entry actions). The underlying data (history entries from Step 3) will already be populated by the time this UI lands. Building the window infrastructure before the views means you can incrementally add views to a working shell.
+
+---
+
+## Integration Points
+
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| AppDelegate ↔ HistoryService | `await historyService.save(...)` | Async, background actor. Fire-and-forget is acceptable (use `try?`) |
+| AppDelegate ↔ DictionaryService | `await dictionaryService.buildPrompt()` | Reads only. Returns `String?` — nil means empty dictionary, no prompt sent |
+| AppDelegate ↔ SnippetService | `await snippetService.expand(text:)` | Pure transformation. Returns original text if no snippets match |
+| HomeView ↔ ModelContainer | `@Query` property wrapper | Automatic re-render on new entries. No polling needed |
+| DictionaryView ↔ ModelContext | `@Environment(\.modelContext)` | Insert/delete via modelContext directly |
+| SnippetsView ↔ ModelContext | `@Environment(\.modelContext)` | Insert/delete via modelContext directly |
+
+### Where the transcription pipeline is modified (AppDelegate.transcribe())
+
+This is the single most important integration point. The current pipeline at lines 278-322 of `AppDelegate.swift` becomes:
+
+```
+Line 279: dictionaryPrompt = await dictionaryService.buildPrompt()  ← INSERT
+Line 280: transcription = try await whisperService.transcribe(..., prompt: dictionaryPrompt)
+Line 287: finalText = await cleanupService.cleanup(...)
+Line 290: finalText = await snippetService.expand(text: finalText)  ← INSERT
+Line 291: try? await historyService.save(text: finalText, ...)      ← INSERT
+Line 292: await MainActor.run { ... }  ← existing block, no change
+```
+
+Three new `await` calls added to a function that is already async. No threading model changes required.
+
+---
+
+## Architectural Patterns
+
+### Pattern 1: @ModelActor for Background Persistence
+
+**What:** Annotate service classes with `@ModelActor` (WWDC24 macro) to bind them to a background Swift actor. The macro creates an isolated executor using the ModelContainer.
+
+**When to use:** Any service that writes to SwiftData from non-UI code (AppDelegate's transcription pipeline).
+
+**Trade-offs:**
+- Pro: Swift compiler enforces thread safety — no manual DispatchQueue.main juggling
+- Pro: Background saves don't block the main thread or UI
+- Con: ModelObjects fetched on background actor cannot be passed to views directly — pass `PersistentIdentifier` or raw value types instead
+
+### Pattern 2: @Query for Reactive Views
+
+**What:** SwiftUI views declare their data needs with `@Query`. SwiftData automatically notifies views when the underlying store changes (including changes from background contexts).
+
+**When to use:** All list views in the companion app (HomeView, DictionaryView, SnippetsView).
+
+**Trade-offs:**
+- Pro: Zero boilerplate — no NSFetchedResultsController equivalent needed
+- Pro: Works automatically across actor boundaries (main context reflects background saves)
+- Con: Limited sorting/filtering expressiveness compared to NSPredicate (though sufficient for this app)
+
+### Pattern 3: Prompt Passthrough for Dictionary
+
+**What:** DictionaryService builds a `String?` prompt that flows through the existing `prompt:` parameter of `WhisperService.transcribe()`. No new API surface on WhisperService.
+
+**When to use:** When adding behavior that maps directly to an existing API parameter.
+
+**Trade-offs:**
+- Pro: WhisperService is unchanged; the integration is at the call site only
+- Pro: Empty dictionary gracefully becomes `nil` prompt — identical to current behavior
+- Con: Prompt is limited to ~224 tokens for whisper-1; extremely large dictionaries will be silently truncated
+
+### Pattern 4: Snippet Post-Processing as Pure Transformation
+
+**What:** SnippetService takes a String in and returns a String out. No side effects, no state mutation.
+
+**When to use:** Text transformation that doesn't need to persist anything itself.
+
+**Trade-offs:**
+- Pro: Trivial to test; trivial to move earlier/later in pipeline
+- Pro: SnippetService reads from SwiftData but only for the snippet list — no write operations
+- Con: Triggers are matched as substrings (case-insensitive) — need to define rules for partial vs. whole-word matching before implementation
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Fullscreen Detection via Accessibility Attributes
+### Anti-Pattern 1: Creating Multiple ModelContainers
 
-**What people do:** Use `AXUIElementCopyAttributeValue` with `kAXFullScreenAttribute` on the frontmost app's window to detect fullscreen mode.
+**What people do:** Create a new ModelContainer in each service or view that needs persistence.
 
-**Why it's wrong:** Requires Accessibility permission, which the app already requests for text insertion. However, checking another app's AX attributes at high frequency (every hotkey event) is slower than CGWindowListCopyWindowInfo and has more edge cases with games that use exclusive fullscreen (not macOS Space fullscreen).
+**Why it's wrong:** Multiple containers pointing to the same SQLite file will corrupt the store or produce merge conflicts. SwiftData is not designed for multiple container instances.
 
-**Do this instead:** Use CGWindowListCopyWindowInfo with bounds comparison against `NSScreen.main.frame`. This is a pure CoreGraphics call, fast, and works for both Space-based fullscreen and exclusive fullscreen games.
+**Do this instead:** Create exactly one ModelContainer in `FlowSpeechApp.init()`, share it via `.modelContainer()` to views, and inject it directly into services via `configure(modelContainer:)` on AppDelegate.
 
-### Anti-Pattern 2: Storing Exclusion List in AppState Instead of UserDefaults
+### Anti-Pattern 2: Using modelContext from a SwiftUI View in AppDelegate
 
-**What people do:** Store `excludedBundleIDs: [String]` as a `@Published` var on AppState and persist it on every change via `saveSettings()`.
+**What people do:** Reach into the SwiftUI environment to get the main ModelContext for use in AppDelegate/services.
 
-**Why it's wrong:** AppState.saveSettings() already handles multiple keys; the exclusion list is a separate concern and can grow large. More importantly, the exclusion check happens outside the main thread in the CGEventTap callback — reading from AppState requires main thread.
+**Why it's wrong:** There is no clean way to get the environment ModelContext from outside the SwiftUI view hierarchy. It leads to force-unwrapping or notification hacks.
 
-**Do this instead:** `AppExclusionService` reads directly from `UserDefaults` at hotkey-down time (UserDefaults is thread-safe for reads). Cache the result in a property that refreshes when the Settings view saves. This avoids any threading issues.
+**Do this instead:** Services own their own ModelContext (created from the shared ModelContainer). The service's context is separate from the view's context; SwiftData handles merging automatically.
 
-### Anti-Pattern 3: Animating RecordingPhase Transitions with Timer-Based Polling
+### Anti-Pattern 3: Storing History in AppState
 
-**What people do:** Use `Timer.scheduledTimer` to poll `appState.recordingPhase` and trigger animations.
+**What people do:** Accumulate transcription history as a `[String]` array in AppState (ObservableObject), then serialize to UserDefaults.
 
-**Why it's wrong:** Unnecessary complexity. AppState is `@Published`; SwiftUI views automatically re-render on phase changes. Wrap phase changes in `withAnimation` at the AppDelegate call site.
+**Why it's wrong:** UserDefaults has a soft limit (~1MB total) and is not designed for append-only log data. History can grow to thousands of entries quickly (daily dictation user → 1000+ entries/year).
 
-**Do this instead:**
-```swift
-// AppDelegate — wrap phase changes in withAnimation
-withAnimation(.spring(duration: 0.3, bounce: 0.1)) {
-    appState.recordingPhase = .recording
-}
-```
+**Do this instead:** SwiftData's SQLite store handles arbitrary amounts of entries efficiently with indexed queries.
 
-### Anti-Pattern 4: Creating a New NSWindow Instance Each Time the Overlay Shows
+### Anti-Pattern 4: Snippet Expansion Before Cleanup
 
-**What current code does:** `recordingWindow` is lazily created on first `showRecordingOverlay()` call (correct), but the guard `if recordingWindow == nil` means the window is never re-created if it gets deallocated.
+**What people do:** Apply snippet expansion to the raw Whisper output before running TextCleanupService.
 
-**Current code is already OK** — but when adding alpha animations, be careful to reset `alphaValue` back to 1.0 after the hide animation completes. If the window is hidden at `alphaValue = 0`, the next `orderFront()` call will show a transparent window.
+**Why it's wrong:** Whisper may transcribe a trigger phrase with different capitalization or with surrounding filler words that cleanup would remove. Expanding before cleanup means the expansion sees uncleaned text.
+
+**Do this instead:** Apply snippets after cleanup — the final transformation step before text insertion.
+
+### Anti-Pattern 5: Blocking Main Thread in buildPrompt()
+
+**What people do:** Call DictionaryService.buildPrompt() synchronously on the main thread before passing to WhisperService.
+
+**Why it's wrong:** `transcribe()` is already an `async` function. ModelContext fetch is fast but should not block main thread.
+
+**Do this instead:** `buildPrompt()` is `async` and creates its own ModelContext from the container. The `transcribe()` call site uses `await`. No UI blocking.
 
 ---
 
 ## Scaling Considerations
 
-This is a single-user local app; traditional scaling doesn't apply. The relevant "scaling" concern is:
+This is a single-user local app. The relevant dimension is data volume over time.
 
-| Concern | At 1 user (now) | If exclusion list grows large |
-|---------|-----------------|------------------------------|
-| Exclusion check latency | <0.1ms for 10 entries | Still <1ms for 1000 entries — Set lookup is O(1) |
-| CGWindowListCopyWindowInfo | ~1-5ms per call | Only called when `excludeFullscreenApps` is true; acceptable |
-| NSWindow for overlay | Single persistent window (correct) | No concern |
+| Concern | At 100 entries | At 10,000 entries | At 100,000 entries |
+|---------|----------------|-------------------|--------------------|
+| HomeView render | Instant | Instant with `@Query` fetch limit | Paginate or limit query to 1000 |
+| Dictionary prompt | ~50 words recommended | N/A — UI should warn at 50+ words | N/A |
+| Snippet scan | O(n×m) scan — negligible | Still negligible (<100 snippets) | N/A |
+| SQLite store size | ~50KB | ~5MB | ~50MB — fine |
 
-Use a `Set<String>` for the in-memory exclusion list lookup, not an `Array`, even though the stored format is an array.
+**Practical limit:** Whisper prompt parameter (224 tokens for whisper-1) is the binding constraint for dictionary size, not SwiftData performance. Enforce a soft cap of 50 words in DictionaryView UI.
 
 ---
 
 ## Sources
 
-- [NSWorkspace.frontmostApplication — Apple Developer Documentation](https://developer.apple.com/documentation/appkit/nsworkspace/frontmostapplication)
-- [CGWindowListCopyWindowInfo — Apple Developer Documentation](https://developer.apple.com/documentation/coregraphics/1455137-cgwindowlistcopywindowwindowinfo)
-- [NSWindow.StyleMask.fullScreen — Apple Developer Documentation](https://developer.apple.com/documentation/appkit/nswindow/stylemask-swift.struct/fullscreen)
-- [NSPasteboard — Apple Developer Documentation](https://developer.apple.com/documentation/appkit/nspasteboard)
-- [Fullscreen Detection — Apple Developer Forums](https://developer.apple.com/forums/thread/792917)
-- [Querying Running Applications in macOS (Gertrude App)](https://gertrude.app/blog/querying-running-applications-in-macos)
-- Direct codebase analysis: AppDelegate.swift, TextInserter.swift, HotkeyManager.swift, RecordingOverlayView.swift, FlowSpeechApp.swift (all read 2026-03-26)
+- [SwiftData — Apple Developer Documentation](https://developer.apple.com/documentation/swiftdata)
+- [ModelContainer — Apple Developer Documentation](https://developer.apple.com/documentation/swiftdata/modelcontainer)
+- [Dive deeper into SwiftData — WWDC23](https://developer.apple.com/videos/play/wwdc2023/10196/)
+- [Track model changes with SwiftData history — WWDC24](https://developer.apple.com/videos/play/wwdc2024/10075/)
+- [What's new in SwiftData — WWDC24](https://developer.apple.com/videos/play/wwdc2024/10137/)
+- [How to create a background context — Hacking with Swift](https://www.hackingwithswift.com/quick-start/swiftdata/how-to-create-a-background-context)
+- [Using ModelActor in SwiftData — BrightDigit](https://brightdigit.com/tutorials/swiftdata-modelactor/)
+- [Configuring SwiftData in a SwiftUI app — polpiella.dev](https://www.polpiella.dev/configuring-swiftdata-in-a-swiftui-app)
+- [NSApplicationActivationPolicy.regular — Apple Developer Documentation](https://developer.apple.com/documentation/appkit/nsapplication/activationpolicy-swift.enum/regular)
+- [Fine-Tuning macOS App Activation Behavior — artlasovsky.com](https://artlasovsky.com/fine-tuning-macos-app-activation-behavior)
+- [OpenAI Speech-to-Text API — prompt parameter](https://platform.openai.com/docs/guides/speech-to-text)
+- [Whisper prompting guide — OpenAI Cookbook](https://developers.openai.com/cookbook/examples/whisper_prompting_guide)
+- Direct codebase analysis: AppDelegate.swift, FlowSpeechApp.swift, WhisperService.swift, TextInserter.swift (read 2026-03-30)
 
 ---
 
-*Architecture research for: SpeechFlow v1.1 — UI revamp, app exclusion, clipboard persistence*
-*Researched: 2026-03-26*
+*Architecture research for: Wave v1.2 — companion app, SwiftData persistence, history, dictionary, snippets*
+*Researched: 2026-03-30*

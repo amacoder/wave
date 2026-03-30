@@ -1,311 +1,528 @@
-# Pitfalls Research
+# Domain Pitfalls — v1.2 Companion App
 
-**Domain:** macOS SwiftUI menu bar dictation app — UI revamp, game exclusion, clipboard persistence, animation polish
-**Researched:** 2026-03-26
-**Confidence:** HIGH for clipboard/CGEventTap pitfalls (well-documented); MEDIUM for game/fullscreen detection (platform-specific, edge cases vary)
+**Domain:** Adding windowed companion app (history, dictionary, snippets) to existing macOS menu-bar dictation app
+**Researched:** 2026-03-30
+**Confidence:** HIGH for LSUIElement/activation pitfalls and SwiftData threading (multiple developer accounts, Apple forums); MEDIUM for snippet/CGEvent interaction (inference from architecture); HIGH for Whisper prompt limit (official OpenAI docs)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: NSWindow Level Conflict — Overlay Disappears Behind Fullscreen Apps
-
-**What goes wrong:**
-The current overlay uses `.floating` window level with `[.canJoinAllSpaces, .stationary, .ignoresCycle]` collection behavior. This combination causes the window to either (a) fail to appear above apps running in their own fullscreen Space, or (b) appear but be obscured by Metal/Quartz exclusive fullscreen games. Users in fullscreen apps — including the primary target user playing League of Legends — see nothing when they dictate.
-
-**Why it happens:**
-macOS fullscreen apps run in a dedicated Space. `.floating` level does not cross Space boundaries without `NSWindowCollectionBehaviorFullScreenAuxiliary`. Even with that flag added, games using exclusive Metal fullscreen (not macOS Spaces fullscreen) bypass the normal window layering entirely — they own a CGDirectDisplay surface directly.
-
-**How to avoid:**
-Add `.fullScreenAuxiliary` to the window's `collectionBehavior` when showing the overlay. For the game exclusion feature, the correct solution is to suppress the hotkey entirely when a game is in focus — do NOT attempt to show the overlay above an exclusive-fullscreen game. Treat exclusion and overlay layering as two separate problems.
-
-The overlay behavior should be:
-```swift
-recordingWindow?.collectionBehavior = [
-    .canJoinAllSpaces,
-    .stationary,
-    .ignoresCycle,
-    .fullScreenAuxiliary  // ADD THIS — required for macOS Spaces fullscreen
-]
-// For overlay level, use .statusBar or higher for non-game fullscreen
-// Do NOT attempt .screenSaver level — blocked by sandboxing in most cases
-```
-
-**Warning signs:**
-- QA test in macOS Spaces fullscreen (Safari, or any app clicked to fullscreen via green button) and the overlay doesn't appear
-- Overlay appears but overlaps a different monitor than the one with the fullscreen app
-- User reports recording starts (sound plays) but no indicator is visible
-
-**Phase to address:** Phase 1 — UI Revamp (any window reconstruction must include this flag from the start, not patched in later)
+Mistakes that cause rewrites, data loss, or require TCC permission re-grants.
 
 ---
 
-### Pitfall 2: CGEventTap Silently Disabled — Hotkeys Stop Working After Code Signing or Update
+### Pitfall 1: `setActivationPolicy(.regular)` Hides All Windows Immediately
 
 **What goes wrong:**
-After re-signing the binary (e.g., build after any code change), the CGEventTap in `HotkeyManager` creates successfully (non-nil return), but events never fire. The tap is "installed" but functionally inert. This is especially likely to manifest after any accessibility permission interaction caused by UI changes triggering a TCC re-evaluation.
+When the companion window is opened from the menu bar (a `.accessory` activation-policy app), calling `NSApp.setActivationPolicy(.regular)` to make the dock icon appear causes macOS to immediately hide all currently visible windows. The overlay and any open settings window both disappear before the companion window finishes presenting. When switching back to `.accessory` to hide the dock icon later, the same thing happens: all windows hide again.
 
 **Why it happens:**
-macOS TCC (Transparency, Consent, and Control) ties the accessibility permission grant to the code signature identity. When the binary is re-signed — even with the same certificate — it can trigger re-evaluation. The tap creation API (`CGEvent.tapCreate`) returns a non-nil `CFMachPort` even when the underlying access is not yet confirmed, making success look identical to failure. The existing check `guard let eventTap = eventTap else { ... }` only catches total nil failures, not silent inert taps.
+`NSApp.setActivationPolicy(.accessory)` was designed for apps that never show regular windows. When you toggle it at runtime, AppKit interprets it as "return to background-only mode" and hides the entire window stack. This is a documented side effect with no workaround that preserves existing window state. Reference: [NSApp.setActivationPolicy(.accessory) hides all windows](https://github.com/onmyway133/notes/issues/569).
 
-Additionally, if the app's UI changes affect the permission prompt flow (onboarding changes, settings window changes) and the user dismisses a stale prompt, the tap can be left in a disabled state with no error delivered to the callback.
+**Consequences:**
+- Recording overlay disappears mid-dictation when companion opens
+- Settings window closes unexpectedly
+- User loses window context; feels broken
 
-**How to avoid:**
-1. Never treat non-nil `eventTap` as healthy. Always verify with `CGEvent.tapIsEnabled(tap:)` after installation.
-2. Add a health-check timer that fires every 2-3 seconds and calls `CGEvent.tapIsEnabled(tap:)`. If the tap is disabled, attempt to re-enable it. If re-enable fails, set an app state error flag and update the menu bar icon.
-3. On any code change that might affect TCC, remove the app from System Settings > Privacy & Security > Accessibility and re-add it.
+**Prevention:**
+Make the dock/no-dock state a one-way decision at launch time, not a dynamic toggle. The cleanest approach for Wave:
+
+1. Remove `LSUIElement = true` from Info.plist entirely.
+2. At app launch, dynamically set `NSApp.setActivationPolicy(.accessory)` if the companion has never been opened (maintaining current menu-bar-only feel).
+3. Once the companion is opened for the first time, persist a flag in UserDefaults (`hasEverOpenedCompanion`) and switch to `.regular` policy permanently.
+4. If users want to hide the dock icon, respect it at next launch rather than mid-session.
+
+Alternative if you must keep dynamic toggling: never show the overlay or settings while transitioning between policies. Gate all window operations behind an `isTransitioningPolicy` semaphore with a 200ms delay.
+
+**Detection:**
+- Build + open companion window → overlay disappears
+- Open Settings → switch to companion → Settings closes unexpectedly
+
+**Phase to address:** Companion App foundation phase — must be architected before any windowing work, not patched on.
+
+---
+
+### Pitfall 2: SwiftData `@Query` Silently Fails in Views Hosted by `NSHostingView`
+
+**What goes wrong:**
+`@Query` annotated properties in SwiftUI views work when the view is presented through SwiftUI's `WindowGroup` or `Window` scene, but fail silently (or crash with "Set a .modelContext in view's environment to use Query") when the view is hosted via `NSHostingView` in a manually-managed `NSWindow`. The companion window, which the app currently creates manually in `AppDelegate`, falls into this trap. Views render but no data appears.
+
+**Why it happens:**
+`@Query` relies on the SwiftUI environment key `\.modelContext` being injected by the scene infrastructure. When you create an `NSHostingView` directly, you bypass the scene graph. The `.modelContainer()` modifier on a view embedded in `NSHostingView` does propagate the environment correctly, but `@Query` has a secondary dependency on the container being registered through the scene system (for automatic save and change tracking). This is a known issue documented on Apple Developer Forums ([ModelContext for SwiftData is not available](https://developer.apple.com/forums/thread/740864)).
+
+**Consequences:**
+- History list shows empty even with records in the store
+- No crash, no visible error — just blank UI
+
+**Prevention:**
+Two valid approaches:
+
+Option A (Recommended): Migrate the companion window to a SwiftUI `WindowGroup` scene in `FlowSpeechApp`. Use the `openWindow` environment action to open it programmatically from `AppDelegate` via a `NotificationCenter` post. Attach `.modelContainer(sharedContainer)` at the `WindowGroup` level. This makes `@Query` work automatically.
 
 ```swift
-// Health check pattern
-private func installTapHealthCheck() {
-    Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-        guard let tap = self?.hotkeyManager.eventTap else { return }
-        if !CGEvent.tapIsEnabled(tap: tap) {
-            CGEvent.tapEnable(tap: tap, enable: true)
-            if !CGEvent.tapIsEnabled(tap: tap) {
-                // Permission revoked — show error in menu bar
-                self?.appState.errorMessage = "Input monitoring permission revoked. Check System Settings."
-            }
+// FlowSpeechApp.swift
+@main
+struct FlowSpeechApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    let container = try! ModelContainer(for: TranscriptionRecord.self, DictionaryEntry.self, Snippet.self)
+
+    var body: some Scene {
+        WindowGroup("Wave", id: "companion") {
+            CompanionView()
+        }
+        .modelContainer(container)
+        .defaultSize(width: 900, height: 600)
+        .defaultPosition(.center)
+
+        Settings {
+            SettingsView()
         }
     }
 }
 ```
 
-**Warning signs:**
-- Hotkey works on first launch after permission grant, then stops after a clean build and relaunch
-- `HotkeyManager.start()` prints no error but key events never fire
-- Works when launched from Xcode but not from Finder/Dock after archive
+Option B (Keep manual NSWindow): Inject `container.mainContext` explicitly via the environment on `NSHostingView`:
 
-**Phase to address:** Phase 1 — UI Revamp (UI reconstruction often triggers TCC re-evaluation; add health check before any other features)
+```swift
+NSHostingView(rootView: CompanionView().environment(\.modelContext, container.mainContext))
+```
+
+Do NOT use `@Query` in views hosted this way — use explicit `FetchDescriptor` calls with the injected `modelContext` instead.
+
+**Detection:**
+- History tab shows no entries despite confirmed saves
+- Console shows "Set a .modelContext in view's environment" at app launch
+
+**Phase to address:** Phase 1 of companion app — the window architecture decision locks in which option is correct.
 
 ---
 
-### Pitfall 3: Clipboard Race Condition — Transcription Overwrites Another App's Content, Then Restores Wrong Value
+### Pitfall 3: Passing `PersistentModel` Instances Across Actor Boundaries Crashes
 
 **What goes wrong:**
-`TextInserter.insertText(_:)` saves `oldContent`, sets transcription on clipboard, pastes via CGEvent, then restores `oldContent` after 0.5 seconds. Three race conditions exist:
+`TranscriptionRecord` objects fetched on the `@MainActor` context (via `@Query` or direct fetch) are passed into a background `Task` for processing — for example, to re-run cleanup on a history entry. This crashes with `EXC_BAD_ACCESS` or produces undefined behavior. Models look thread-safe (they're `class` types) but are not `Sendable`.
 
-1. **User copies something between transcription completion and the 0.5s restore** — the restore overwrites the user's new copy.
-2. **Another app (clipboard manager, password manager) reads the clipboard mid-operation** — it logs the transcription as user-copied data.
-3. **The async DispatchQueue.main.asyncAfter fires after the window is deallocated** — memory access on cleared pasteboard object.
+**Why it happens:**
+SwiftData models hold a reference to their `ModelContext`. Accessing a `PersistentModel` from a different thread than its context's queue is unsupported. The crash often manifests not at the pass site but later, during deallocation or the next autosave cycle. From Apple Developer Forums: "After the fetch operation, when models (PersistentModel) are passed to other functions and threads, they retain their context. Changing a field in one model across different threads can lead to an application crash." ([Concurrent Programming in SwiftData](https://fatbobman.com/en/posts/concurret-programming-in-swiftdata/)).
 
-For clipboard persistence mode (new feature: don't restore), the restore is intentionally skipped. But the current code structure always restores if `oldContent != nil`, meaning the new "persistence" behavior requires a separate code path that could easily regress.
+**Consequences:**
+- Non-deterministic crash that only appears under concurrent load
+- Hard to reproduce in development; surfaces in production use
 
-**How to avoid:**
-1. Mark the clipboard write with `org.nspasteboard.TransientType` so clipboard managers skip it:
+**Prevention:**
+Never pass `PersistentModel` instances across actor boundaries. Map to a plain `Sendable` struct before crossing:
+
 ```swift
-pasteboard.setData(Data(), forType: NSPasteboard.PasteboardType("org.nspasteboard.TransientType"))
-pasteboard.setString(text, forType: .string)
+// Safe: convert before crossing actor boundary
+struct TranscriptionSnapshot: Sendable {
+    let id: PersistentIdentifier
+    let text: String
+    let date: Date
+}
+
+// In @MainActor context:
+let snapshot = TranscriptionSnapshot(id: record.persistentModelID, text: record.text, date: record.date)
+
+// Now safe to pass to background task:
+Task.detached {
+    await process(snapshot)
+}
 ```
-2. Capture a `changeCount` snapshot before writing. In the restore block, check if `changeCount` has advanced — if it has, the user or another app wrote something new, so skip the restore:
+
+For background writes, use `@ModelActor` but ONLY with a fresh `ModelContext`, never `container.mainContext` — passing `mainContext` to `ModelActor` unbinds the UI state. ([ModelActor pitfalls](https://killlilwinters.medium.com/taking-swiftdata-further-modelactor-swift-concurrency-and-avoiding-mainactor-pitfalls-3692f61f2fa1)).
+
+**Detection:**
+- EXC_BAD_ACCESS crash in `NSPersistentStoreCoordinator` internal methods
+- Crash only appears when concurrent operations overlap (e.g., recording + viewing history simultaneously)
+
+**Phase to address:** History storage phase — any background save operation (auto-saving transcription result) is a crossing site.
+
+---
+
+### Pitfall 4: Companion Window Opening Steals Focus, Breaks Active Dictation
+
+**What goes wrong:**
+When the companion window is opened (e.g., from the menu bar while recording), `NSApp.activate()` brings Wave to the foreground. The previously focused text field (where the user intends to paste the transcription) loses focus. After transcription completes, `TextInserter.insertText()` fires `Cmd+V` — which now pastes into the companion window's search field or history list, not the user's intended target.
+
+**Why it happens:**
+`makeKeyAndOrderFront` + `NSApp.activate()` changes `NSWorkspace.shared.frontmostApplication` to Wave. The `TextInserter` does not snapshot the target app at recording start — it fires `Cmd+V` into whatever is frontmost at insertion time.
+
+**Consequences:**
+- Transcription pasted to wrong app
+- User cannot replicate; appears as intermittent paste failure
+- Companion window may receive and act on the paste (inserting into a search/filter field)
+
+**Prevention:**
+Snapshot the target app's `pid` at recording start and restore focus before insertion:
+
 ```swift
-let changeCountSnapshot = pasteboard.changeCount
-DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-    guard pasteboard.changeCount == changeCountSnapshot + 1 else { return } // Someone else wrote
-    if let old = oldContent {
-        pasteboard.clearContents()
-        pasteboard.setString(old, forType: .string)
+// In startRecording():
+let targetApp = NSWorkspace.shared.frontmostApplication
+
+// In TextInserter.insertText(), before Cmd+V:
+targetApp?.activate(options: .activateIgnoringOtherApps)
+Thread.sleep(forTimeInterval: 0.05) // let activation settle
+simulatePaste()
+```
+
+Additionally, the companion window should NOT call `NSApp.activate()` if a recording is in progress. Gate companion window presentation behind `appState.phase == .idle`.
+
+**Detection:**
+- Start recording in Xcode → open companion window before releasing hotkey → transcription appears in companion search bar
+
+**Phase to address:** Companion App foundation phase — the window-opening code path must check `appState.phase`.
+
+---
+
+### Pitfall 5: History Grows Unbounded, Store Becomes Slow Over Months
+
+**What goes wrong:**
+Every dictation session saves a `TranscriptionRecord`. A moderate user dictating 20 times per day accumulates 7,000+ records per year. SwiftData does not prune old records automatically. After 6-12 months, `@Query` fetches with no limit take 200-500ms, causing the history view to stutter on open. Full-text search becomes noticeably slow.
+
+**Why it happens:**
+SwiftData fetches load models into memory. A `@Query` with no `FetchDescriptor.fetchLimit` and no predicate loads every record into memory at query time. The issue is compounded by `@Query` re-executing the full fetch whenever any property of any record changes (e.g., autosave updating a `lastModified` timestamp on every transcription save triggers a full reload).
+
+**Consequences:**
+- App feels increasingly sluggish over time
+- Users with long history cannot open the app without a beachball
+
+**Prevention:**
+
+1. Always use `fetchLimit` for the main history list. Display the latest 200 records; load more on scroll:
+
+```swift
+var descriptor = FetchDescriptor<TranscriptionRecord>(
+    sortBy: [SortDescriptor(\.date, order: .reverse)]
+)
+descriptor.fetchLimit = 200
+```
+
+2. Implement a retention policy at save time: after saving a new record, delete records older than 90 days (or user-configured limit):
+
+```swift
+func trimHistory(context: ModelContext, keepDays: Int = 90) {
+    let cutoff = Calendar.current.date(byAdding: .day, value: -keepDays, to: Date())!
+    let old = FetchDescriptor<TranscriptionRecord>(
+        predicate: #Predicate { $0.date < cutoff }
+    )
+    let toDelete = (try? context.fetch(old)) ?? []
+    toDelete.forEach { context.delete($0) }
+}
+```
+
+3. Store only `text`, `date`, `wordCount`, and `appBundleID` per record. Do NOT store raw audio paths or base64 audio in SwiftData — that causes exponential store growth.
+
+**Detection:**
+- Seed 10,000 records in simulator; open history tab and measure time-to-interactive
+- Profile shows `NSPersistentStoreCoordinator` taking > 100ms in the main thread on app open
+
+**Phase to address:** History storage phase — set `fetchLimit` and retention policy from the first day of shipping history, not retroactively.
+
+---
+
+## Moderate Pitfalls
+
+---
+
+### Pitfall 6: Whisper `prompt` Field Silently Truncated at 224 Tokens
+
+**What goes wrong:**
+The custom dictionary feature feeds user-defined terms into Whisper's `prompt` parameter to improve transcription of proper nouns and jargon. If the dictionary grows beyond ~892 characters, Whisper silently drops everything beyond token 224. The user adds 50 custom terms, but only the first 25 actually influence transcription. There is no error — the API call succeeds.
+
+**Why it happens:**
+Whisper's context window is 448 tokens, split evenly between prompt (224 tokens max) and output. Characters after token 224 are silently ignored at the model level, not at the API level. The API itself has no validation for this. Confirmed in [OpenAI Whisper GitHub Discussion #1824](https://github.com/openai/whisper/discussions/1824) and [OpenAI Cookbook: Whisper Prompting Guide](https://cookbook.openai.com/examples/whisper_prompting_guide).
+
+**Prevention:**
+
+1. Cap the prompt string at 800 characters before sending. Whisper's tokenizer averages ~4 characters/token, so 800 chars ≈ 200 tokens (safe margin):
+
+```swift
+// In WhisperService.transcribe():
+let cappedPrompt = dictionaryPrompt.count > 800
+    ? String(dictionaryPrompt.prefix(800))
+    : dictionaryPrompt
+
+// Use cappedPrompt, not dictionaryPrompt
+```
+
+2. In the Dictionary UI, show a character counter and warn when the user's terms would exceed the effective limit.
+
+3. Prioritize recently-used terms if the list exceeds the limit (sort by `lastUsedDate` descending, truncate to fit).
+
+**Detection:**
+- Add 60 custom terms → verify the last 30 do not improve accuracy (blind test with those terms)
+
+**Phase to address:** Dictionary feature phase.
+
+---
+
+### Pitfall 7: Snippet Trigger Fires During Dictation — Inserts Expansion Instead of Literal Text
+
+**What goes wrong:**
+The snippet system monitors keyboard events (via `NSEvent.addGlobalMonitorForEvents`) to detect typed trigger phrases. During active recording, the hotkey manager is also monitoring events. If the user's dictation trigger phrase (e.g., holding Fn) happens to be typed character-by-character by another app or input method while the snippet monitor is running, the snippet fires mid-dictation and inserts expanded text into the wrong target.
+
+A more common scenario: The user dictates a phrase that matches a snippet trigger word (e.g., "my email"). After transcription, `TextInserter` pastes the literal phrase. But if the snippet monitor is watching `NSPasteboard` changes, it may intercept the paste and attempt to expand "my email" into the email address — inserting expanded text instead of the transcription result.
+
+**Why it happens:**
+Global `NSEvent` monitors and CGEvent taps do not have per-app scoping. Both the hotkey system and the snippet system compete for the same event stream. If snippet expansion triggers on clipboard-paste events or on the `Cmd+V` CGEvent fired by `TextInserter`, the snippet logic sees the pasted text as "typed" and attempts to expand it.
+
+**Prevention:**
+
+1. Snippet expansion should ONLY trigger on genuine keyboard input events (`NSEvent.EventTypeMask.keyDown`), never on synthetic CGEvents or clipboard-paste events. Add a check: if the event's `CGEventSource` is `combinedSessionState` (not `hidSystemState`), it is a synthetic event — skip snippet detection.
+
+2. Disable snippet monitoring during the window from `startRecording()` to `insertText()` completion:
+
+```swift
+// In startRecording():
+snippetMonitor.pause()
+
+// After TextInserter.insertText() returns:
+DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+    self.snippetMonitor.resume()
+}
+```
+
+3. Do not use clipboard-change events as a snippet trigger signal. Snippet expansion should be strictly word-boundary triggered on keyDown events only.
+
+**Detection:**
+- Add snippet "my email" → dictate the phrase "my email" → verify transcription appears literally, not expanded
+
+**Phase to address:** Snippets feature phase.
+
+---
+
+### Pitfall 8: `NavigationSplitView` Toolbar Insets Break Layout When Hosted in `NSWindow`
+
+**What goes wrong:**
+`NavigationSplitView` inside a SwiftUI `WindowGroup` adds an invisible top spacing in the detail column equal to the toolbar height. When `.windowToolbarStyle(.unified)` or `.windowStyle(.titleBar)` is applied, this doubles the vertical inset. The sidebar content also gets clipped at the bottom on macOS 14 Ventura if the window height is constrained.
+
+**Why it happens:**
+`NavigationSplitView` was designed for `WindowGroup` windows with `NSToolbar` integration. It assumes a `fullSizeContentView` window style mask. Without it, safe area calculations are wrong. The `inspector()` modifier compounds this by adding a second set of insets.
+
+**Prevention:**
+
+1. Use `.windowStyle(.titleBar)` with `.windowToolbarStyle(.unified(showsTitle: true))` on the companion `WindowGroup` — this is the combination that gives correct behavior.
+2. Add `.ignoresSafeArea(.all)` to the `NavigationSplitView` root, then add back safe area insets manually per column.
+3. Do not use `inspector()` modifier in the initial implementation — it adds layout complexity with no benefit for Wave's use case.
+4. Set `.fullSizeContentView` in the window's `styleMask` if using a manual `NSWindow` approach.
+
+**Detection:**
+- History tab shows white gap at top equal to toolbar height
+- Sidebar list items are clipped at bottom by 22px
+
+**Phase to address:** Companion App UI phase.
+
+---
+
+### Pitfall 9: `@Query` Re-Fetches Entire History on Every Autosave
+
+**What goes wrong:**
+SwiftData's `autosaveEnabled` defaults to `true` on `ModelContext`. Each time a transcription is saved (every dictation session), the autosave triggers change tracking across all observed contexts. Any view using `@Query` for `TranscriptionRecord` gets notified and re-executes its fetch — even if the change is a write, not a modification of the queried records. On a busy history view, this causes a visible UI refresh every time the user dictates.
+
+**Why it happens:**
+SwiftData's change notification system does not distinguish between "a new record was added" and "an existing record in your query was modified." All changes to a model type broadcast to all `@Query` observers of that type. Confirmed as an unresolved issue with SwiftData's pending-changes behavior pre-iOS 17.4 / macOS 14.4, but the over-notification behavior persists post-patch. ([SwiftData Fetching Pending Changes](https://useyourloaf.com/blog/swiftdata-fetching-pending-changes/)).
+
+**Prevention:**
+
+1. Save new transcription records from a background `ModelActor` context, not from `container.mainContext`. Background context saves do not directly trigger `@Query` observers on the main context until the next runloop tick, giving the UI a chance to batch.
+
+2. Use `FetchDescriptor` with `includePendingChanges: false` for the history list. This prevents pending (unsaved) records from appearing prematurely:
+
+```swift
+var descriptor = FetchDescriptor<TranscriptionRecord>(
+    sortBy: [SortDescriptor(\.date, order: .reverse)]
+)
+descriptor.fetchLimit = 200
+descriptor.includePendingChanges = false
+```
+
+3. For the history list view, consider adding `.animation(.none)` to the list to suppress the flash-reload animation on background updates.
+
+**Detection:**
+- Keep history view open, dictate 5 times in rapid succession → observe whether the list visibly refreshes/flickers on each dictation
+
+**Phase to address:** History storage phase — set `includePendingChanges: false` from the start.
+
+---
+
+## Minor Pitfalls
+
+---
+
+### Pitfall 10: Dock Icon Appears Then Disappears on Cold Launch (LSUIElement Timing Bug)
+
+**What goes wrong:**
+If `LSUIElement = true` in Info.plist but the app calls `setActivationPolicy(.regular)` at launch to show the dock icon when the companion has been opened before, users see the dock icon briefly appear (during AppKit's initial setup), disappear (when `LSUIElement = true` is applied by LaunchServices), and then reappear (when `setActivationPolicy(.regular)` fires in `applicationDidFinishLaunching`). This flash is more visible on fast Macs.
+
+**Prevention:**
+Remove `LSUIElement = true` from Info.plist entirely. Control dock presence exclusively via `setActivationPolicy()` at launch. Set it synchronously in `applicationWillFinishLaunching` (before the first window appears), not in `applicationDidFinishLaunching` — the latter is too late and causes the flash. Reference: [Fine-Tuning macOS App Activation Behavior](https://artlasovsky.com/fine-tuning-macos-app-activation-behavior).
+
+**Phase to address:** Companion App foundation phase.
+
+---
+
+### Pitfall 11: Companion Window `openWindow` Requires Scene-Graph Context — Fails from AppDelegate
+
+**What goes wrong:**
+SwiftUI's `openWindow` environment action cannot be called from `AppDelegate`. If the menu bar "Open Wave" button calls `openWindow` directly, it crashes with `Fatal error: No window with id 'companion' was found.` The action requires an active SwiftUI view in the responder chain.
+
+**Prevention:**
+Use `NotificationCenter` as the bridge. Post a notification from `AppDelegate`, listen in a hidden SwiftUI view that has the `openWindow` environment, and trigger the open from there:
+
+```swift
+// AppDelegate:
+NotificationCenter.default.post(name: .openCompanion, object: nil)
+
+// Hidden SwiftUI view (always in scene graph):
+struct CompanionOpener: View {
+    @Environment(\.openWindow) var openWindow
+    var body: some View {
+        Color.clear.frame(width: 0, height: 0)
+            .onReceive(NotificationCenter.default.publisher(for: .openCompanion)) { _ in
+                openWindow(id: "companion")
+            }
     }
 }
 ```
-3. For clipboard persistence mode: use a `UserDefaults`-backed flag checked synchronously in `insertText`, not a conditional in a completion block. This prevents the conditional from being wrong after a settings change mid-operation.
 
-**Warning signs:**
-- User reports losing clipboard content after dictation
-- Clipboard manager (e.g., Maccy, Pasta) logs every transcription in history
-- Clipboard restore fires after user has already pasted something else
-
-**Phase to address:** Phase 3 — Clipboard Persistence (the feature directly changes this code path; do both the persistence flag and the changeCount guard together)
+**Phase to address:** Companion App foundation phase.
 
 ---
 
-### Pitfall 4: Game/Fullscreen Detection False Positives and False Negatives
+### Pitfall 12: Custom Dictionary Terms with Special Characters Break Whisper Prompt
 
 **What goes wrong:**
-`CGWindowListCopyWindowInfo` with frame-size comparison to `NSScreen.main?.frame` is the intuitive approach, but produces both false positives (videos in browser, fullscreen Terminal, fullscreen Xcode) and false negatives (games using exclusive Metal fullscreen that don't register as a normal "window" in the list).
+Users add dictionary terms containing newlines, quotes, or non-ASCII characters (e.g., product names with trademark symbols, names with accents). When these terms are joined into the Whisper `prompt` string, the resulting multipart form body is malformed. Whisper returns a 400 error or ignores the prompt silently.
 
-Specifically for League of Legends: the game runs on macOS via Rosetta. It can alternate between windowed, borderless windowed, and exclusive fullscreen modes based on in-game settings. The bundle ID is `com.riotgames.LeagueofLegends.LeagueClientUx` for the client but `com.riotgames.LeagueofLegends` for the game process. Detecting by window geometry alone misses the game's Rosetta-translated process.
-
-**Why it happens:**
-There is no single reliable API for "is a game running in exclusive fullscreen." `NSWindowCollectionBehavior` flags are only accessible for your own windows. For another app's windows, you're limited to `CGWindowListCopyWindowInfo` and `NSRunningApplication`. macOS Sequoia and newer versions have begun returning incorrect owner info from `CGWindowListCopyWindowInfo` (all status items attributed to Control Center).
-
-**How to avoid:**
-Use a three-signal detection approach. Require at least two of three signals to trigger exclusion to reduce false positives:
-
-1. **App is in a known exclusion list** (user-configurable bundle IDs). Default list includes known game bundle IDs. This handles the League use case precisely.
-2. **Frontmost app has a window matching screen dimensions** — `CGWindowListCopyWindowInfo` + frame comparison. Catches generic fullscreen games.
-3. **App's window layer is 0 and display connection count is > 0 via `CGGetOnlineDisplayList`** — indicates exclusive display ownership.
-
-For the user interface, the exclusion list is the primary mechanism (explicit, no false positives). Frame detection is secondary and only used for "auto-detect fullscreen" if the user enables it.
-
-Do NOT use NSWorkspace notifications alone — `NSWorkspaceActiveSpaceDidChangeNotification` fires when spaces change, not when a game enters exclusive fullscreen within the same space.
+**Prevention:**
+Sanitize dictionary terms before building the prompt string:
 
 ```swift
-// Primary detection: explicit bundle ID blocklist
-let frontmostBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
-let isExcluded = appState.excludedBundleIDs.contains(frontmostBundleID)
+func buildWhisperPrompt(from terms: [String]) -> String {
+    let sanitized = terms.map { term in
+        term
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    .filter { !$0.isEmpty }
+    let joined = sanitized.joined(separator: ", ")
+    return String(joined.prefix(800)) // enforce 800-char cap
+}
 ```
 
-**Warning signs:**
-- Hotkey suppressed in Xcode with a large editor window (false positive)
-- Hotkey fires normally during League game but not during client (bundle ID mismatch)
-- Detection works in testing but fails after OS update that changes CGWindowListCopyWindowInfo behavior
+Validate terms at entry time in the Dictionary UI: reject empty terms and strip leading/trailing whitespace.
 
-**Phase to address:** Phase 2 — Game/Fullscreen Exclusion
+**Phase to address:** Dictionary feature phase.
 
 ---
 
-### Pitfall 5: Animation Timers Running When Overlay Is Hidden — CPU Drain and State Corruption
+### Pitfall 13: Snippet Expansion Conflicts with App's Own `Cmd+V` Paste
 
 **What goes wrong:**
-The current `RecordingOverlayView` uses `withAnimation(.easeInOut(duration: 1).repeatForever(...))` started in `.onAppear`. The `TranscribingView` uses a similar infinite rotation. When `hideRecordingOverlay()` calls `orderOut(nil)`, the NSWindow is hidden but the SwiftUI view remains alive and all animations continue running. Over a typical day with many dictation sessions, this accumulates:
+The snippet system, monitoring for trigger phrases typed by the user, may observe the `Cmd+V` CGEvent fired by `TextInserter` as the beginning of a new typed sequence. If the first word of the pasted transcription matches a snippet trigger, the snippet fires and appends the expansion after the pasted text.
 
-- RepeatForever animations continue executing on the render thread
-- `appState.audioLevels` updates still trigger re-renders on a hidden view
-- `CircularWaveformView`'s Canvas draws on hidden windows
+**Prevention:**
+Set a flag in `TextInserter` during the simulated paste window:
 
-On macOS Sequoia (15+), NSHostingView layout is computed more lazily, which means the view hierarchy may also attempt layout passes while hidden, triggering the "reentrant layout" warning in logs.
+```swift
+class TextInserter {
+    var isSynthesizingPaste = false
 
-**Why it happens:**
-`orderOut(nil)` hides the window from the screen compositor but does not pause SwiftUI's rendering engine. The view's animation state machines remain active. The existing architecture reuses `recordingWindow` across sessions (created once, never deallocated), compounding the effect.
+    func insertText(_ text: String) {
+        isSynthesizingPaste = true
+        // ... paste logic ...
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.isSynthesizingPaste = false
+        }
+    }
+}
 
-**How to avoid:**
-Two options — choose based on redesign scope:
+// In SnippetMonitor:
+guard !textInserter.isSynthesizingPaste else { return }
+```
 
-Option A (minimal change): Use an explicit `@State var isVisible: Bool` bound to `appState.isRecording || appState.isTranscribing`. Gate all animations behind this flag. Drive animation timing with `Task.sleep` or `withAnimation` that is explicitly cancelled on state change, not `repeatForever`.
-
-Option B (recommended with UI revamp): Replace `orderOut/orderFront` with adding/removing the NSHostingView's root view entirely, or use a `TimelineView` with `.animation` that automatically pauses when not visible. The overlay view should not hold animation state across sessions.
-
-For the waveform specifically, move audio level updates from `AppState` to a publisher that only fires when `isRecording == true` and the overlay window is visible. Avoid sending 60 updates/second to a hidden view.
-
-**Warning signs:**
-- CPU usage stays elevated (2-5% instead of ~0%) between dictation sessions
-- Log shows "NSHostingView is being laid out reentrantly" during rapid session start/stop
-- `WaveformBar` animations still visible briefly when overlay reappears after a hide (leftover animation state from previous session)
-
-**Phase to address:** Phase 1 — UI Revamp (animation architecture is set during redesign; adding these guards after the fact is much harder)
+**Phase to address:** Snippets feature phase.
 
 ---
 
-## Technical Debt Patterns
+### Pitfall 14: `NSWindow` for Companion Loses First Responder When Overlay Appears
 
-Shortcuts that seem reasonable now but create long-term problems.
+**What goes wrong:**
+When the floating overlay (`recordingWindow`) calls `orderFront(nil)`, it briefly steals first responder from the companion window's text fields (e.g., the dictionary entry field, the snippet trigger field). Characters the user is typing into those fields are dropped for 1-2 keystrokes. The overlay is correctly set to `ignoresMouseEvents = true` but does not suppress keyboard first-responder stealing.
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| `usleep` calls in `TextInserter` on main thread | Simple modifier key clearing | Blocks UI thread for 50-60ms; visible stutter on fast machines | Never — replace with async dispatch + continuation |
-| Hardcoded `0.5s` clipboard restore delay | Works on most machines | Fails on slow machines (paste hasn't completed); too slow on fast machines | Acceptable for v1.1 if documented as "known timing assumption" |
-| Single `recordingWindow` instance (create once, never destroy) | Avoids recreation cost | Accumulates stale animation state; CGWindowListCopyWindowInfo sees it even when hidden | Acceptable only if all animations are gated on visibility flag |
-| Bundle ID blocklist hardcoded to League of Legends | Solves immediate use case | Users with other games need to manually edit defaults or no UI exists | Never — provide settings UI from day one |
-| `NSEvent.addGlobalMonitorForEvents` AND CGEventTap (duplicate) | Belt-and-suspenders | Two handlers both fire for the same key; can cause double-start-recording if not guarded by `modifierKeyDown` state | Acceptable as backup, but requires explicit de-duplication test |
+**Prevention:**
+When `orderFront(nil)` is called on the overlay, explicitly restore first responder to the companion window if it was the previous key window:
 
----
+```swift
+private func showRecordingOverlay() {
+    let previousKeyWindow = NSApp.keyWindow
+    recordingWindow?.orderFront(nil)
+    // Overlay should never become key — restore if needed
+    if NSApp.keyWindow === recordingWindow {
+        previousKeyWindow?.makeKey()
+    }
+}
+```
 
-## Integration Gotchas
+Additionally, set `recordingWindow?.canBecomeKey = false` (via subclass override) to prevent it from ever becoming key window.
 
-Common mistakes when connecting to macOS system APIs.
-
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| CGEventTap + code signing | Treat non-nil return as success | Always verify `CGEvent.tapIsEnabled(tap:)` post-install; add runtime health check |
-| NSPasteboard + clipboard managers | Write only `.string` type | Add `org.nspasteboard.TransientType` marker to prevent clipboard managers from logging transcriptions |
-| NSWorkspace.frontmostApplication | Cache the value across the hotkey lifecycle | Re-query at hotkey-down time; app focus can change between monitor setup and key press |
-| CGEvent Cmd+V simulation | Post with `.cgSessionEventTap` immediately after clipboard write | Add a `CGEventSource(stateID: .combinedSessionState)` source, not `.hidSystemState`, for synthetic events; the latter can confuse some apps' undo stacks |
-| SwiftUI `withAnimation(.repeatForever)` | Start in `.onAppear` with no stop condition | Pair every `repeatForever` start with an explicit cancellation when the view should go idle |
+**Phase to address:** Companion App integration phase.
 
 ---
 
-## Performance Traps
+## Phase-Specific Warnings
 
-Patterns that work initially but create problems over time.
-
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Audio level updates at 60Hz publishing to AppState (observed object) | Every waveform bar re-renders 60x/second; SwiftUI diffs 30 views per frame | Throttle updates to 20Hz; use `@Published` with a `.debounce` or rate-limit in `AudioRecorder.onAudioLevel` | Immediately visible; worsens with more waveform bars |
-| Canvas in `CircularWaveformView` redraws on every level change | GPU work on a view that's rarely visible | Gate Canvas redraws behind a `@State isDrawing: Bool`; only set true when overlay is visible | As session frequency increases |
-| CGWindowListCopyWindowInfo called on every flagsChanged event | 5-10ms stall per hotkey press on window-heavy desktops | Call only once per hotkey-down, cache result; use NSWorkspace observers for app changes | Noticeable on machines with 20+ open windows |
-| NSHostingView size recalculation on Sequoia | Layout pass triggered on `orderFront` causes jitter/jump on first appearance | Pre-warm the window by calling `layoutIfNeeded()` after creation before showing | macOS 15 Sequoia and later |
-
----
-
-## Security Mistakes
-
-Domain-specific security issues.
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Transcribed text persists on general pasteboard indefinitely | Sensitive dictated content (passwords, private notes) readable by any app polling the pasteboard | Default behavior: use `org.nspasteboard.TransientType` marker; only disable restore if user explicitly opts into persistence |
-| Excluded bundle ID list stored in plain UserDefaults | Trivially modified by any process; not a security boundary | Acceptable — this is a UX feature not a security boundary; document that the list is a user convenience not a sandbox |
-| CGEventTap with `.defaultTap` consumes all key events | If the callback hangs, all keyboard input is blocked system-wide | Always return quickly from the tap callback; defer heavy work to async dispatch |
-
----
-
-## UX Pitfalls
-
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Overlay appears in same position every time (centered, fixed Y) | Covers text field user is typing into | Position overlay near the bottom-center of the screen, or detect the active text field position via AX API and offset the overlay |
-| Clipboard persistence is silent — user doesn't know transcription is on clipboard | User thinks dictation failed if paste doesn't work; tries to dictate again | Show a subtle "Copied" indicator in the overlay's done-state animation |
-| Game exclusion with no feedback | User holds hotkey in a game, nothing happens, doesn't know why | Show a brief menu bar notification or badge when hotkey is suppressed due to exclusion |
-| Animation plays full enter sequence even on very short recordings (< 1 second) | Jarring; animation not finished when transcription already complete | Use interruptible animations; all state transitions should be cancellable mid-animation |
-| Settings window uses NSApp.activate — steals focus from user's work | User is in the middle of typing; settings opens and interrupts | Open settings window without `NSApp.activate(ignoringOtherApps:)` for non-modal windows |
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|----------------|------------|
+| Companion window foundation | `setActivationPolicy` hides existing windows (Pitfall 1) | Commit to permanent dock presence when companion is first opened; never toggle policy mid-session |
+| Companion window foundation | `@Query` silent failure in NSHostingView (Pitfall 2) | Use SwiftUI `WindowGroup` scene for companion, not manual `NSWindow` |
+| Companion window foundation | Companion window open steals focus from dictation target (Pitfall 4) | Snapshot target app pid at recording start; gate window open on `appState.phase == .idle` |
+| History storage | Unbounded store growth (Pitfall 5) | Ship `fetchLimit` and 90-day retention on day one |
+| History storage | `@Query` re-fetch flash on every dictation save (Pitfall 9) | Save from background context; use `includePendingChanges: false` |
+| History storage | PersistentModel passed to background Task crashes (Pitfall 3) | Map to `Sendable` struct before any actor boundary crossing |
+| Dictionary feature | Whisper prompt silently truncated (Pitfall 6) | Cap prompt at 800 chars; show counter in UI |
+| Dictionary feature | Special characters break prompt (Pitfall 12) | Sanitize at entry time; strip newlines and trim whitespace |
+| Snippets feature | Snippet fires during/after dictation paste (Pitfall 7) | Pause snippet monitor during recording→insertion window |
+| Snippets feature | Snippet fires on TextInserter's Cmd+V (Pitfall 13) | Set `isSynthesizingPaste` flag during paste window |
+| Companion UI | NavigationSplitView toolbar insets corrupt layout (Pitfall 8) | Use `WindowGroup` + `.windowToolbarStyle(.unified)` from the start |
+| Companion integration | Overlay steals first responder from companion (Pitfall 14) | Prevent overlay window from ever becoming key window |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete but are missing critical pieces.
-
-- [ ] **Game exclusion:** Often missing user-configurable exclusion list — verify Settings has UI to add/remove bundle IDs (not just hardcoded League)
-- [ ] **Clipboard persistence:** Often missing `org.nspasteboard.TransientType` marker — verify Maccy or another clipboard manager does NOT log transcriptions in its history
-- [ ] **CGEventTap health:** Often missing runtime tap-alive check — verify hotkey still works after 30 minutes of app running (tap can silently disable on some OS versions)
-- [ ] **Animation gating:** Often missing stop conditions for `repeatForever` — verify CPU usage is < 1% when not recording (use Activity Monitor)
-- [ ] **Overlay positioning on multi-monitor:** Often tested only on main screen — verify overlay appears on the screen containing the active window, not always on `NSScreen.main`
-- [ ] **Clipboard restore race:** Often missing `changeCount` guard — verify clipboard content is NOT corrupted if user copies something during the 0.5s restore window
-- [ ] **Fullscreen collection behavior:** Often missing `.fullScreenAuxiliary` — verify overlay appears when Safari is in macOS fullscreen Space
-
----
-
-## Recovery Strategies
-
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| CGEventTap silently disabled | LOW | Remove app from Accessibility settings, re-add, relaunch. Add health-check timer to prevent recurrence. |
-| Clipboard corruption from restore race | LOW | Manually re-copy what was lost; add `changeCount` guard before next release |
-| Overlay missing fullscreen collection behavior | LOW | Add `.fullScreenAuxiliary` to window creation; test in Spaces fullscreen |
-| RepeatForever animation CPU drain | MEDIUM | Add `isVisible` guard to all animation blocks; requires UI test to confirm fix |
-| Game detection false positives blocking dictation in non-games | MEDIUM | Switch to explicit bundle ID list as primary signal; disable frame-based auto-detection by default |
-| TextInserter `usleep` main thread block causing UI freeze | HIGH | Refactor to `DispatchQueue.global().async` with a completion callback; requires rethinking TextInserter's threading model |
-
----
-
-## Pitfall-to-Phase Mapping
-
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| NSWindow level / fullscreen collection behavior | Phase 1 — UI Revamp | Test overlay visibility in Safari fullscreen Space before shipping |
-| CGEventTap silent disable + health check | Phase 1 — UI Revamp | Rebuild, re-sign, relaunch 3 times; hotkey must work each time |
-| Animation gating (repeatForever CPU drain) | Phase 1 — UI Revamp | Activity Monitor shows < 1% CPU when idle after 3 recording sessions |
-| Game detection false positives | Phase 2 — Game Exclusion | Test exclusion with League; test non-exclusion in fullscreen Xcode, Terminal, Safari |
-| Clipboard changeCount race condition | Phase 3 — Clipboard Persistence | Copy text, dictate, verify original clipboard survives after 1s |
-| Clipboard TransientType marker | Phase 3 — Clipboard Persistence | Maccy/clipboard manager shows no transcription in history |
-| Main thread `usleep` in TextInserter | Phase 3 — Clipboard Persistence | Profiler shows no main-thread stalls during text insertion |
+- [ ] **Activation policy:** Does the dock icon appear/disappear correctly? No flash on cold launch. Test: quit, relaunch, verify no icon flicker.
+- [ ] **@Query environment:** With companion in `WindowGroup`, open History tab — does it show saved records? Test: dictate once, open companion, verify entry appears.
+- [ ] **Background save safety:** Does dictating while History tab is open cause any crash? Run 10 dictation cycles with companion open, watch for EXC_BAD_ACCESS.
+- [ ] **Focus restoration:** Dictate into TextEdit → open companion → dictate again → verify transcription goes to TextEdit, not companion.
+- [ ] **History growth:** Seed 5,000 records, open History tab, measure time-to-interactive. Must be < 300ms.
+- [ ] **Whisper prompt cap:** Add 100 dictionary terms, confirm only first ~25 terms (first 800 chars) are sent in the prompt (log the prompt string).
+- [ ] **Snippet suppression:** During recording, type a snippet trigger on a physical keyboard; snippet must NOT fire until after recording ends.
+- [ ] **Overlay focus:** Open companion, click dictionary entry field, start recording. First responder must stay on companion's text field.
 
 ---
 
 ## Sources
 
-- [CGEvent Taps and Code Signing: The Silent Disable Race — Daniel Raffel (2026-02-19)](https://danielraffel.me/til/2026/02/19/cgevent-taps-and-code-signing-the-silent-disable-race/)
-- [Identifying and Handling Transient or Special Data on the Clipboard — NSPasteboard.org](http://nspasteboard.org/)
-- [Fullscreen Detection — Apple Developer Forums](https://developer.apple.com/forums/thread/792917)
-- [Fullscreen Detection using Core Graphics — Apple Developer Forums](https://developer.apple.com/forums/thread/779272)
-- [Window visible on all spaces including fullscreen apps — Apple Developer Forums](https://developer.apple.com/forums/thread/26677)
-- [Accessibility Permission in macOS — jano.dev (2025-01-08)](https://jano.dev/apple/macos/swift/2025/01/08/Accessibility-Permission.html)
-- [FB18327911: CGWindowListCopyWindowInfo returns all status items as Control Center in macOS 26](https://github.com/feedback-assistant/reports/issues/679)
-- [NSPasteboard changeCount — Apple Developer Documentation](https://developer.apple.com/documentation/appkit/nspasteboard/1533544-changecount)
-- [Bridging SwiftUI and Core Animations — Cameron Little (2024-11-14)](https://camlittle.com/posts/2024-11-14-swiftui-core-animation/)
-- [NSHostingView centering changes in macOS Sequoia — Furnace Creek Software (2024-12-07)](https://furnacecreek.org/blog/2024-12-07-centering-nswindows-with-nshostingcontrollers-on-sequoia)
+- [NSApp.setActivationPolicy(.accessory) hides all windows](https://github.com/onmyway133/notes/issues/569)
+- [Showing Settings from macOS Menu Bar Items — steipete.me (2025)](https://steipete.me/posts/2025/showing-settings-from-macos-menu-bar-items)
+- [Fine-Tuning macOS App Activation Behavior — artlasovsky.com](https://artlasovsky.com/fine-tuning-macos-app-activation-behavior)
+- [ModelContext for SwiftData is not available — Apple Developer Forums](https://developer.apple.com/forums/thread/740864)
+- [Taking SwiftData Further: @ModelActor, Swift Concurrency, and Avoiding @MainActor Pitfalls — Medium](https://killlilwinters.medium.com/taking-swiftdata-further-modelactor-swift-concurrency-and-avoiding-mainactor-pitfalls-3692f61f2fa1)
+- [Concurrent Programming in SwiftData — fatbobman.com](https://fatbobman.com/en/posts/concurret-programming-in-swiftdata/)
+- [Ongoing Issues with ModelActor in SwiftData — Apple Developer Forums](https://developer.apple.com/forums/thread/770416)
+- [SwiftData Fetching Pending Changes — Use Your Loaf](https://useyourloaf.com/blog/swiftdata-fetching-pending-changes/)
+- [How to optimize SwiftData apps — Hacking with Swift](https://www.hackingwithswift.com/quick-start/swiftdata/how-to-optimize-the-performance-of-your-swiftdata-apps)
+- [Whisper Prompt Length — openai/whisper GitHub Discussion #1824](https://github.com/openai/whisper/discussions/1824)
+- [Whisper Prompting Guide — OpenAI Cookbook](https://cookbook.openai.com/examples/whisper_prompting_guide)
+- [SwiftUI NavigationSplitView on macOS — Apple Developer Forums](https://developer.apple.com/forums/thread/746611)
+- [macOS full height sidebar window — Medium/bancarel.paul](https://medium.com/@bancarel.paul/macos-full-height-sidebar-window-62a214309a80)
+- [Window Management with SwiftUI 4 — fline.dev](https://www.fline.dev/window-management-on-macos-with-swiftui-4/)
+- [Nailing the Activation Behavior of a Spotlight/Raycast-Like Command Palette — multi.app](https://multi.app/blog/nailing-the-activation-behavior-of-a-spotlight-raycast-like-command-palette)
+- [NSApp.setActivationPolicy(.regular) — Apple Developer Forums](https://developer.apple.com/forums/thread/650270)
 
 ---
-*Pitfalls research for: macOS dictation app UI revamp, game exclusion, clipboard persistence, animation polish*
-*Researched: 2026-03-26*
+*Pitfalls research for: v1.2 companion app — history, dictionary, snippets added to existing menu-bar dictation app*
+*Researched: 2026-03-30*

@@ -1,41 +1,43 @@
 # Feature Research
 
-**Domain:** macOS push-to-talk dictation app — UI polish, game exclusion, clipboard resilience
-**Researched:** 2026-03-26
-**Confidence:** MEDIUM (UI/animation patterns from official docs HIGH; competitor internals LOW; macOS API patterns MEDIUM)
+**Domain:** macOS dictation app — companion app with transcription history, custom dictionary, and text expansion snippets
+**Researched:** 2026-03-30
+**Confidence:** HIGH for core patterns (Wispr Flow docs verified); MEDIUM for Whisper prompt mechanics (OpenAI cookbook verified); LOW for competitor internals not publicly documented
 
 ## Feature Landscape
 
-This research covers only the five new milestone features. Existing v1.0 features (hotkey recording, Whisper transcription, auto-paste, settings, onboarding) are treated as already-shipped foundations.
+This research covers only the new v1.2 milestone features. v1.1 shipped features (overlay, animations, game exclusion, clipboard persistence, blue palette) are treated as foundations.
 
 ---
 
 ### Table Stakes (Users Expect These)
 
-Features that best-in-class dictation apps universally provide. Missing these makes the app feel unfinished.
+Features that best-in-class dictation apps universally provide. Missing these makes the companion app feel unfinished.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Visible state progression (idle → recording → transcribing → done) | Users need to know if the app heard them and is working | LOW | Four states minimum; each needs distinct visual treatment |
-| Non-intrusive overlay positioning | Overlay must not block working area; bottom-center or bottom-right is standard | LOW | Wispr Flow uses bottom-center "pill"; macOS Tahoe native dictation uses bottom-center; this is the established pattern |
-| Smooth entry/exit animation for overlay | Abrupt appearance feels broken; apps like Superwhisper use fade+scale | LOW | SwiftUI `.spring(duration:bounce:)` or `.bouncy()` available since WWDC23 |
-| Waveform bars during recording | Audio input feedback is universally expected; bars reacting to mic level | MEDIUM | Already partially exists in v1.0; needs visual refinement not new logic |
-| Clipboard write that survives paste | User copies something → triggers dictation → transcription overwrites clipboard → their original data is gone. Apps are expected to preserve OR clearly communicate clipboard intent | MEDIUM | Currently the 0.5s restore kills the transcription too — this is a known UX gap in v1.0 |
-| App-level exclusion of incompatible contexts | Dictation apps are expected to not activate in contexts where the hotkey conflicts (games, video players, terminals in raw mode) | MEDIUM | No exclusion logic exists in v1.0; this is a gap relative to Superwhisper and Wispr Flow |
+| Timestamped transcription list | Any history feature shows when things happened; without timestamps history is unnavigable | LOW | Store `createdAt: Date` on each SwiftData record; sort descending |
+| Date grouping (Today / Yesterday / This Week / Older) | Wispr Flow and every comparable app groups history by time bucket; flat lists are unusable at scale | MEDIUM | Compute section keys from `Calendar.current` comparisons on `createdAt`; `List` with `Section` headers in SwiftUI |
+| Copy action per entry | Users open history to re-use text; copy is the primary action | LOW | `UIPasteboard` / `NSPasteboard` write on button tap |
+| Delete action per entry | History accumulates; pruning is expected | LOW | `.onDelete` modifier or swipe-to-delete; SwiftData `modelContext.delete(entry)` |
+| Full text visible in list | Truncated previews that can't be expanded feel like a bug | LOW | List row shows 2-3 line preview; tapping opens a detail view with full text |
+| Sidebar navigation with distinct sections | Companion apps with multiple feature areas (history, dictionary, snippets) require sidebar; tab bars are iOS convention, not macOS | LOW | `NavigationSplitView` with sidebar `.listStyle(.sidebar)`; three items: History, Dictionary, Snippets |
+| Dock presence when companion is open | Menu-bar-only apps feel limited; companion app implies standard macOS window | LOW | `LSUIElement = NO` when companion window is open, or separate `NSWindowController` that shows/hides Dock icon via `NSApp.setActivationPolicy(.regular/.accessory)` |
 
 ---
 
 ### Differentiators (Competitive Advantage)
 
-Features that set SpeechFlow apart. Not universally present in competitors.
+Features that go beyond what competitors provide or do better in Wave's specific context.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Blue palette identity (deep navy + vibrant blue) | Wispr Flow uses soft beige/neutral "editorial" aesthetic; a clear blue identity is visually distinct and matches user preference explicitly stated in PROJECT.md | LOW | Pure design work; no new logic. Risk: needs consistent application across all surfaces — overlay, menu bar icon, settings. |
-| Pill overlay at bottom-center with spring-in animation | Wispr Flow's "Flow Bar" is the gold-standard interaction model for this use case — appears at bottom of screen, small footprint, left-click to interact | LOW | Position logic: `NSScreen.main?.visibleFrame` + bottom-center offset. Animation: scale from 0.8 + opacity 0→1 on spring. |
-| Per-state animation microinteractions | State transitions with distinct character (recording pulses, transcribing spins/shimmers, done bounces to checkmark) feel premium vs simple fade | MEDIUM | Pure SwiftUI animation; no additional permissions. Each state needs its own `withAnimation(.spring(...))` block. |
-| Clipboard persistence without restore | Transcription stays on clipboard after paste so user can paste again elsewhere — unlike Superwhisper's "restore clipboard" default behavior | LOW | Simply: do not restore clipboard after paste. Flag with `org.nspasteboard.AutoGeneratedType` marker so clipboard managers don't record it if desired. Requires explicit settings toggle. |
-| Smart game/fullscreen exclusion with user-configurable list | Users can add specific app bundle IDs to an exclusion list; fullscreen apps are auto-detected as likely incompatible | MEDIUM | Two layers: (1) auto-detect via `NSWorkspace.shared.frontmostApplication` + fullscreen check, (2) user bundle ID exclusion list in Settings. |
+| Usage stats (streak, total words, WPM) | Gives users a sense of progress; drives habit formation; Wispr Flow shows WPM per entry but not aggregate streaks | MEDIUM | Streak = consecutive calendar days with at least one transcription; word count = `components(separatedBy: .whitespaces).count`; WPM = words / (duration in minutes) |
+| Retry transcript per entry | Users can re-trigger Whisper on a stored audio file if initial transcription was wrong; Wispr Flow has this as a specific changelog feature | MEDIUM | Requires storing raw audio per entry alongside text; audio is non-trivial storage; see dependency notes |
+| Dictionary words fed directly into Whisper prompt | Wave controls the full API call, so custom vocabulary is injected as the `prompt` parameter on every transcription — competitors that use black-box APIs cannot do this as precisely | LOW | Format: comma-separated proper nouns / terms appended to any existing prompt string; max 224 tokens total; group by domain for better bias |
+| Snippet trigger detection via post-processing | Wave owns the transcription pipeline; after Whisper returns text, a simple string scan checks for any registered trigger phrases and replaces them in-place before pasting | LOW | String replacement pass on `transcribedText`; case-insensitive match; Wispr Flow strips punctuation on standalone-trigger matches — do the same |
+| Static text expansion only (no dynamic variables for v1.2) | Simpler to build and explain; Wispr Flow also ships static-only initially | LOW | Store `(trigger: String, expansion: String)` pairs; no date/time interpolation until validated |
+| Word count and WPM per history entry | Matches Wispr Flow's per-entry metadata; gives immediate feedback after dictation | LOW | Computed at save time; stored as integers on the model; no recalculation needed |
 
 ---
 
@@ -43,74 +45,92 @@ Features that set SpeechFlow apart. Not universally present in competitors.
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Notch integration (Dynamic Island-style) | Premium aesthetic, Apple-native feel | Not all Macs have notches; creates two separate overlay code paths; macOS notch API is undocumented/fragile | Bottom-center pill works on all Macs universally |
-| Animated waveform that reacts to actual audio amplitude in real time | Feels responsive | Requires real-time audio buffer analysis during recording, adding complexity to AudioRecorder; current waveform is decorative bars | Keep decorative animated bars during recording; don't tie to actual amplitude unless v2 |
-| Auto-detect language from speech | Eliminates need for language hint setting | Requires Whisper `language: null` mode, which is slower and less accurate for known-language users; adds latency | Keep single language hint; add language selection in pill overlay as future feature |
-| Clipboard permission prompt handling (macOS 16+) | Future-proofing | macOS 16 clipboard privacy prompt is opt-in developer preview only as of 2025; not yet shipped to users broadly; premature to build around it | Write clipboard normally; add `NSPasteboard.AutoGeneratedType` marker to minimize false triggers; revisit when macOS 16 ships |
-| Full clipboard history / restore stack | Power user appeal | Complex state management; conflicts with clipboard persistence feature; most users use a dedicated clipboard manager | Single-level restore toggle is sufficient; let clipboard managers (Paste, Raycast) handle history |
+| Audio playback per history entry | Wispr Flow has it; users want to verify transcription accuracy | Storing audio per entry multiplies storage significantly (1 min audio ≈ 1-2 MB compressed); complicates the data model; requires media player UI; file management for deletions | Store text only for v1.2; note "audio playback" as v1.3 feature if demand is confirmed |
+| Full-text search across history | Power-user appeal; expected in any list with >50 items | `.searchable` in SwiftUI + SwiftData predicate filtering is straightforward, but adds a non-trivial interaction surface (debounce, empty states, highlight matches); scope risk | Defer to v1.3; the list with date sections is sufficient for initial launch |
+| Dynamic snippet variables (today's date, clipboard contents) | TextExpander-style power | Significantly increases parser complexity; edge cases multiply (nested variables, malformed syntax); 80% of snippet use cases are static text | Static text only for v1.2; add date variable as a single special case in v1.3 if users request it |
+| Auto-learn vocabulary from history | AI-style "learns what you say" | Requires NLP pass on every transcript; false-positive proper nouns; unclear how to surface additions for user review; scope risk for a minor accuracy gain | Manual dictionary only; let users add terms explicitly |
+| Team/shared dictionary and snippets | Enterprise appeal | Requires sync infrastructure, conflict resolution, access control; out of scope per PROJECT.md | Solo user; single-device persistence via SwiftData for now |
+| Bulk import/export history | Power user data portability | CSV/JSON parsing, file picker, schema versioning; high complexity for low initial demand | Add copy-all-to-clipboard or "export as text file" as a minimal v1.3 feature |
+| Separate Dock icon vs menu-bar icon management UI | Some users want companion always in Dock | Toggling `NSApp.setActivationPolicy` at runtime is fragile; plist `LSUIElement` controls cannot be changed post-launch without restart | Show Dock icon when companion window is open; hide when window closes; no user-facing toggle |
 
 ---
 
 ## Feature Dependencies
 
 ```
-[Pill Overlay Redesign]
-    └──requires──> [Overlay window positioning logic (NSScreen bottom-center)]
-    └──requires──> [AppState with distinct idle/recording/transcribing/done enum]
-                       └──requires──> [Existing AppState observable — already built]
+[Companion App Shell (NavigationSplitView + sidebar)]
+    └──required by──> [History Tab]
+    └──required by──> [Dictionary Tab]
+    └──required by──> [Snippets Tab]
+    └──requires──> [Dock presence toggle logic (NSApp.setActivationPolicy)]
 
-[State Transition Animations]
-    └──requires──> [Pill Overlay Redesign] (must exist before animating between states)
-    └──enhances──> [Waveform bars] (bars animate within recording state)
+[SwiftData Model Container]
+    └──required by──> [History Tab] (TranscriptionEntry model)
+    └──required by──> [Dictionary Tab] (DictionaryEntry model)
+    └──required by──> [Snippets Tab] (SnippetEntry model)
+    └──requires──> [macOS 14+ minimum — already in scope per PROJECT.md]
 
-[Clipboard Persistence]
-    └──conflicts──> [Existing 0.5s clipboard restore logic in TextInserter]
-    └──requires──> [Settings toggle to let users choose behavior]
+[History Tab]
+    └──requires──> [Recording pipeline writes entry on transcription complete]
+    └──enhances──> [Stats (streak, word count, WPM)] (computed from history entries)
+    └──optionally──> [Retry transcript] (requires stored audio — defer)
 
-[Game/Fullscreen App Exclusion]
-    └──requires──> [NSWorkspace.shared.frontmostApplication check on hotkey press]
-    └──requires──> [HotkeyManager to call exclusion check before activating]
-    └──enhances──> [Settings tab] (exclusion list UI needs a settings panel)
-    └──independent of──> [Clipboard Persistence]
-    └──independent of──> [Pill Overlay Redesign]
+[Dictionary Tab]
+    └──enhances──> [Whisper transcription accuracy via prompt injection]
+    └──requires──> [WhisperService reads DictionaryEntry list at call time]
+    └──independent of──> [Snippets Tab]
 
-[Blue Palette / Visual Redesign]
-    └──enhances──> [Pill Overlay Redesign] (colors applied to the new overlay)
-    └──independent of──> [Game Exclusion]
-    └──independent of──> [Clipboard Persistence]
+[Snippets Tab]
+    └──requires──> [Post-processing pass in WhisperService after transcription]
+    └──independent of──> [Dictionary Tab]
+    └──independent of──> [History Tab]
+
+[Whisper prompt injection (Dictionary)]
+    └──requires──> [Dictionary words loaded before API call]
+    └──conflicts with──> [Prompt exceeding 224 token limit] (guard: truncate word list if needed)
+
+[Snippet post-processing]
+    └──requires──> [Final transcribed text exists]
+    └──must run──> after [GPT-4o-mini cleanup] (so snippets apply to cleaned text, not raw ASR)
+    └──must run──> before [TextInserter pastes text]
 ```
 
 ### Dependency Notes
 
-- **Pill overlay requires AppState enum:** The overlay must know which state it's in to show the correct visual. AppState already exists; needs a `RecordingState` enum replacing any boolean flags.
-- **Clipboard persistence conflicts with existing restore logic:** `TextInserter` currently saves clipboard, pastes, then restores after 0.5s. Persistence means skipping the restore step. This is a one-line change but needs a settings flag and careful testing.
-- **Game exclusion requires HotkeyManager integration:** The check must happen before recording starts — in the `flagsChanged` / `CGEventTap` handler. It cannot be a post-hoc check.
-- **Animations require the overlay to exist first:** There is nothing to animate until the pill shape and states are defined.
+- **Companion shell is the foundation:** No history, dictionary, or snippets UI is possible until `NavigationSplitView` shell exists. This must be Phase 1.
+- **SwiftData container must exist before any tab:** All three feature tabs read/write SwiftData. The model schema and `ModelContainer` setup must land in the same phase as the shell.
+- **Recording pipeline must write history entries:** After `WhisperService` returns a transcript (and after GPT cleanup), `AppDelegate`/`AppState` must persist a `TranscriptionEntry`. This is the critical bridge between the existing pipeline and the new companion.
+- **Dictionary injection is low-cost but must be wired into WhisperService:** At the point where the API call is constructed, load dictionary terms, format as a comma-separated prompt prefix, and append to any existing `prompt` parameter. Guard against the 224 token limit.
+- **Snippet replacement must run after GPT cleanup, before paste:** Running before cleanup risks the cleanup model paraphrasing the trigger phrase away. Running after ensures the snippet fires on the final, user-visible text.
+- **Audio storage for "retry transcript" is a storage risk:** Deferring audio storage eliminates retry as a v1.2 feature. This is the right call — retry requires a separate audio file management system.
 
 ---
 
-## MVP Definition (for this milestone — v1.1)
+## MVP Definition (v1.2 Companion App)
 
-### Must Ship (Core of the Milestone)
+### Launch With (v1.2)
 
-- [ ] **Pill overlay at bottom-center** — Replaces current floating overlay. Positions using `NSScreen.main?.visibleFrame` bottom-center. Pill shape with rounded corners.
-- [ ] **Blue palette applied throughout** — Deep navy background, vibrant blue accent (#2563EB or adjusted), soft blue-white highlights. Applied to overlay, menu bar, settings window.
-- [ ] **Four-state visual progression** — `idle` (hidden or minimal), `recording` (waveform bars), `transcribing` (spinner or shimmer), `done` (brief checkmark or text preview). Each state distinct.
-- [ ] **Spring animations on state transitions** — Entry/exit with `.spring(duration: 0.4, bounce: 0.25)`. State changes with `.animation(.spring(...), value: state)`.
-- [ ] **Clipboard persistence toggle** — Settings toggle: "Keep transcription on clipboard" (default ON). When ON, skip the restore step. When OFF, preserve original behavior.
-- [ ] **Game/fullscreen exclusion** — Check `NSWorkspace.shared.frontmostApplication` on hotkey press. If app is fullscreen, suppress activation. Bundle ID exclusion list in Settings (manual, text field or add-current-app button).
+- [ ] **Companion window with sidebar navigation** — Three sections: History, Dictionary, Snippets. `NavigationSplitView`. Dock icon shows when window is open.
+- [ ] **SwiftData schema** — `TranscriptionEntry`, `DictionaryEntry`, `SnippetEntry` models with `ModelContainer` wired into app lifecycle.
+- [ ] **History tab** — Date-grouped list (Today/Yesterday/This Week/Older), per-entry copy and delete, word count and WPM per entry.
+- [ ] **Usage stats** — Streak days, total words, average WPM shown at top of History tab.
+- [ ] **Dictionary tab** — Add/edit/delete custom vocabulary terms. Terms injected as Whisper `prompt` parameter on each transcription call.
+- [ ] **Snippets tab** — Add/edit/delete (trigger, expansion) pairs. Post-processing pass replaces trigger phrases in transcribed text before paste.
+- [ ] **Recording pipeline writes to history** — `TranscriptionEntry` created after each successful transcription, capturing text, duration, word count, WPM, timestamp.
 
-### Add After Validation (v1.2)
+### Add After Validation (v1.2.x)
 
-- [ ] **"Add current app" button in exclusion settings** — Reads frontmost app bundle ID and adds it in one click. Reduces friction for adding games.
-- [ ] **Waveform bars tied to mic amplitude** — If users report waveform feels dead, wire to actual AudioRecorder buffer levels. Requires real-time callback from AVAudioEngine tap.
-- [ ] **Overlay drag-to-reposition** — Let users move the pill. Store position in UserDefaults.
+- [ ] **Search in history** — Full-text filter with `.searchable`; add when list grows past ~50 entries in real use.
+- [ ] **Date variable in snippets** — Single `{date}` variable that expands to today's date; add if users request dynamic content.
+- [ ] **Per-entry "open in source app"** — If source app bundle ID stored with entry, offer re-focus. Requires storing `sourceAppBundleID` on `TranscriptionEntry`.
 
-### Future Consideration (v2+)
+### Future Consideration (v1.3+)
 
-- [ ] **Notch integration** — Only meaningful for MacBook Pro 2021+; deferred per PROJECT.md.
-- [ ] **macOS 16 pasteboard privacy handling** — Not broadly shipped; revisit when macOS 16 is out.
-- [ ] **Language switcher in pill overlay** — Right-click or long-press to change language without opening settings.
+- [ ] **Audio playback per entry** — Requires audio file storage; defer until v1.3 per PROJECT.md.
+- [ ] **Full history search with highlighted matches** — Beyond simple filter; deferred.
+- [ ] **Bulk import/export snippets (CSV/JSON)** — Wispr Flow supports 1,000-item bulk import; add if power users request it.
+- [ ] **Writing style preferences** — AI rewrite modes per PROJECT.md v1.3 scope.
+- [ ] **Notes/scratchpad** — Per PROJECT.md v1.3 scope.
 
 ---
 
@@ -118,87 +138,123 @@ Features that set SpeechFlow apart. Not universally present in competitors.
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| Blue palette redesign | HIGH (first impression, identity) | LOW (design only) | P1 |
-| Pill overlay + bottom-center positioning | HIGH (UX foundation) | LOW (window positioning) | P1 |
-| State transition animations (4 states) | HIGH (feels polished) | MEDIUM (animation per state) | P1 |
-| Clipboard persistence | HIGH (fixes real v1.0 bug) | LOW (skip restore + toggle) | P1 |
-| Game/fullscreen auto-detection | HIGH (fixes real user problem: League of Legends) | MEDIUM (NSWorkspace check + HotkeyManager integration) | P1 |
-| Bundle ID exclusion list UI in Settings | MEDIUM (power user control) | MEDIUM (list UI + persistence) | P2 |
-| Waveform amplitude tracking | LOW (decorative bars work fine) | HIGH (audio buffer callback) | P3 |
-| Overlay drag-to-reposition | LOW (bottom-center is fine) | MEDIUM (drag gesture + persistence) | P3 |
+| Companion shell + sidebar navigation | HIGH (foundation for everything) | LOW (NavigationSplitView is standard) | P1 |
+| SwiftData schema + persistence | HIGH (nothing works without it) | MEDIUM (schema design, migration risk) | P1 |
+| Recording pipeline writes history | HIGH (history is useless without data) | MEDIUM (bridge from existing pipeline) | P1 |
+| History tab (list + date groups) | HIGH (primary user-facing feature) | MEDIUM (date grouping logic) | P1 |
+| Usage stats (streak, word count, WPM) | MEDIUM (nice habit signal) | LOW (computed from history) | P1 |
+| Dictionary tab + Whisper prompt injection | HIGH (core accuracy value prop) | LOW (API call modification) | P1 |
+| Snippets tab + post-processing replacement | HIGH (automation value prop) | LOW (string scan pass) | P1 |
+| Per-entry copy action | HIGH (main reason to open history) | LOW | P1 |
+| Per-entry delete action | MEDIUM (hygiene) | LOW | P1 |
+| Dock icon management | MEDIUM (macOS convention) | LOW | P1 |
+| Search in history | MEDIUM (grows in value with use) | MEDIUM | P2 |
+| Per-entry source app tracking | LOW (convenience) | LOW (store bundleID on entry) | P2 |
+| Audio playback per entry | MEDIUM (verification) | HIGH (file storage + player) | P3 |
+| Dynamic snippet variables | LOW-MEDIUM (power users) | HIGH (parser complexity) | P3 |
 
 **Priority key:**
-- P1: Must ship in v1.1 milestone
-- P2: Ship in v1.1 if time permits, otherwise v1.2
-- P3: Future consideration
+- P1: Must have for v1.2 launch
+- P2: Ship in v1.2 if scope permits, otherwise v1.2.x
+- P3: v1.3+ consideration
 
 ---
 
 ## Competitor Feature Analysis
 
-| Feature | Wispr Flow | Superwhisper | SpeechFlow v1.1 Plan |
-|---------|------------|--------------|----------------------|
-| Overlay position | Bottom-center pill ("Flow Bar") | Floating window, user-repositionable | Bottom-center pill (Wispr-inspired) |
-| Color palette | Soft neutral/beige editorial | Dark UI, blue accents | Deep navy + vibrant blue (distinct) |
-| State animation | Smooth microinteractions (GIF in changelog) | Fade effects, mini window mode | Spring-based 4-state transitions |
-| App exclusion | Not publicly documented | Restore clipboard option exists, exclusion unclear | Auto-detect fullscreen + user bundle ID list |
-| Clipboard handling | Replaces clipboard during paste (standard) | "Restore clipboard" option | Persistence toggle (default: keep transcription) |
-| Waveform | Real-time bars | Animated recording window | Decorative animated bars (decorative, not amplitude-tied) |
-| Game detection | Not documented | Not documented | Fullscreen detection via NSWorkspace (new feature) |
+| Feature | Wispr Flow | Superwhisper | Wave v1.2 Plan |
+|---------|------------|--------------|----------------|
+| History tab | Yes — date groups (Today/Yesterday/This Week/Last Week/Older), filter by source app, full-text search, sort options, WPM per entry | Meeting notes / file transcription log; not a per-dictation log | Date groups, per-entry copy/delete/WPM; no search at launch |
+| Stats | WPM per entry; no aggregate streak visible | Not documented | Streak days, total words, avg WPM in header |
+| Retry transcript | Yes — explicitly in changelog; requires stored audio | Not documented | Deferred (requires audio storage) |
+| Custom vocabulary / dictionary | Yes — "learns unique words"; likely prompt injection | Yes — "Enter names, abbreviations, specialized terms once. Superwhisper remembers forever." | Manual entry, injected as Whisper `prompt` parameter |
+| Snippets / text expansion | Yes — trigger phrase → static expansion; 60-char trigger, 4,000-char expansion; strips punctuation on standalone match | Not documented | Trigger → expansion pairs; post-processing string replacement |
+| Bulk snippet import | Yes — up to 1,000 items, 3 MB file | Not documented | Not in v1.2; deferred |
+| Companion window / dock presence | Yes — full app with sidebar; dock icon | Yes — full app | NavigationSplitView + dock icon when open |
+| Audio playback | Yes — "listen to your recordings to verify accuracy" | Yes (file transcription) | Deferred to v1.3 |
 
 ---
 
 ## Technical Implementation Notes
 
-### Overlay Positioning (Pill at Bottom-Center)
-Use `NSScreen.main?.visibleFrame` to get the available screen area (below menu bar, above Dock). Position the window at `(screenWidth/2 - pillWidth/2, visibleFrame.minY + padding)`. Set window level to `.floating` or `.statusBar` to ensure it stays above most content.
+### Whisper Prompt Injection for Dictionary
 
-### Fullscreen Detection
+The Whisper API `prompt` parameter accepts up to **224 tokens** (multilingual tokenizer). Format dictionary terms as a comma-separated list of proper nouns/phrases appended to the existing prompt string:
+
+```
+"Wave, OpenAI, GPT-4o-mini, Kubernetes, PostgreSQL, [user terms...]"
+```
+
+- Longer prompts are more reliable than short ones (OpenAI Cookbook, verified HIGH confidence)
+- Group terms by domain when possible ("React, TypeScript, SwiftUI, Xcode" vs a random list)
+- Guard: if term list exceeds ~180 tokens, truncate to the most recently added terms (user-controlled order)
+- Whisper follows the prompt's spelling for ambiguous phonetics — it cannot override the spoken word, only guide ambiguous transcription
+
+### Snippet Trigger Detection
+
+Post-processing pass after GPT-4o-mini cleanup, before `TextInserter`:
+
+1. Load all `SnippetEntry` records from SwiftData
+2. For each entry, do a case-insensitive search for `trigger` in `cleanedText`
+3. On match: replace first occurrence with `expansion` (or all occurrences — TBD)
+4. Edge case: strip trailing punctuation from the match window (Wispr Flow does this for standalone triggers)
+5. Pass modified text to `TextInserter`
+
+Complexity: LOW. No regex required for static triggers — `String.replacingOccurrences(of:with:options:)` with `.caseInsensitive` is sufficient.
+
+### SwiftData Model Schema
+
+Three models needed:
+
 ```swift
-// On hotkey press, before starting recording:
-func shouldSuppressHotkey() -> Bool {
-    guard let frontmost = NSWorkspace.shared.frontmostApplication else { return false }
-    let bundleID = frontmost.bundleIdentifier ?? ""
+@Model class TranscriptionEntry {
+    var text: String
+    var createdAt: Date
+    var durationSeconds: Double
+    var wordCount: Int
+    var wpm: Double
+    var sourceAppBundleID: String?   // optional, for v1.2.x
+}
 
-    // Check user exclusion list
-    if userExcludedBundleIDs.contains(bundleID) { return true }
+@Model class DictionaryEntry {
+    var term: String
+    var createdAt: Date
+}
 
-    // Check fullscreen state via window list
-    // NSApplication.shared.currentSystemPresentationOptions only works for OUR app
-    // For other apps: use CGWindowListCopyWindowInfo to check if any window
-    // covers the full screen bounds
-    let screenBounds = NSScreen.main?.frame ?? .zero
-    // If frontmost app has a window matching full screen size → suppress
-    return frontmostAppIsFullscreen(pid: frontmost.processIdentifier, screenBounds: screenBounds)
+@Model class SnippetEntry {
+    var trigger: String
+    var expansion: String
+    var createdAt: Date
 }
 ```
 
-**Caveat (MEDIUM confidence):** `NSApplication.shared.currentSystemPresentationOptions` only reflects the current app's own presentation, not the frontmost app's. Full detection for other apps requires `CGWindowListCopyWindowInfo` with `kCGWindowOwnerPID` filtering and bounds comparison against screen frame.
+Streak calculation: query `TranscriptionEntry` grouped by `Calendar.current.startOfDay(for: createdAt)`, count consecutive days ending today.
 
-### Clipboard Persistence
-Current flow: save clipboard → write transcription → send Cmd+V → restore clipboard after 0.5s.
-New flow (persistence ON): save clipboard → write transcription → send Cmd+V → **do not restore**. The transcription stays available.
-New flow (persistence OFF): current behavior unchanged.
-Implementation: one boolean flag in `TextInserter`; expose in Settings as a toggle.
+### Dock Icon Toggle
 
-### macOS 16 Clipboard Privacy Risk
-Writing to clipboard (NSPasteboard.general.setString) is not affected by the new privacy feature — only reading is. SpeechFlow writes, then triggers paste via CGEvent. This workflow is exempt from the privacy prompt. LOW risk for current macOS versions. **Flag for review when macOS 16 ships broadly.**
+```swift
+// When companion window opens:
+NSApp.setActivationPolicy(.regular)
+
+// When companion window closes (all windows hidden):
+NSApp.setActivationPolicy(.accessory)
+```
+
+`NSApp.setActivationPolicy` can be called at runtime without restart. `.accessory` = menu-bar-only (no Dock icon, no Cmd+Tab). `.regular` = Dock + Cmd+Tab. This is the standard pattern for hybrid menu-bar / windowed apps.
 
 ---
 
 ## Sources
 
-- [Wispr Flow Flow Bar Changelog](https://roadmap.wisprflow.ai/changelog/pointup2-new-flow-bar-flow-pro) — Flow Bar positioning and interaction model
-- [Superwhisper Changelog](https://superwhisper.com/changelog) — Animation and overlay design patterns in a peer app
-- [NSPasteboard.org — Transient Data Best Practices](http://nspasteboard.org/) — Clipboard marker types, AutoGeneratedType
-- [Michael Tsai — Pasteboard Privacy Preview macOS 15.4](https://mjtsai.com/blog/2025/05/12/pasteboard-privacy-preview-in-macos-15-4/) — Read-only privacy prompt, write exemption
-- [Apple — NSRunningApplication](https://developer.apple.com/documentation/appkit/nsrunningapplication) — frontmostApplication, bundleIdentifier, processIdentifier
-- [Apple — CGWindowListCopyWindowInfo](https://developer.apple.com/documentation/coregraphics/1455137-cgwindowlistcopywindowinfo) — Fullscreen window detection for other processes
-- [Apple — WWDC23 Animate with Springs](https://developer.apple.com/videos/play/wwdc2023/10158/) — spring(duration:bounce:) animation API
-- [Apple — NSApplication.PresentationOptions](https://developer.apple.com/documentation/appkit/nsapplication/presentationoptions) — fullScreen presentation flag
-- [Querying Running Applications in macOS — Gertrude](https://gertrude.app/blog/querying-running-applications-in-macos) — NSWorkspace.shared.runningApplications patterns
-- [AI Dictation Tools True Differentiators — A Fading Thought](https://afadingthought.substack.com/p/best-ai-dictation-tools-for-mac) — Competitor philosophy and feature analysis
+- [Wispr Flow Snippets Documentation](https://docs.wisprflow.ai/articles/5784437944-create-and-use-snippets) — Trigger matching behavior, punctuation stripping, 60-char trigger limit, 4,000-char expansion limit (HIGH confidence)
+- [Wispr Flow History Changelog](https://roadmap.wisprflow.ai/changelog/view-your-previous-history-and-report-transcriptions) — Date grouping, retry transcript, audio playback features (HIGH confidence)
+- [OpenAI Whisper Prompting Guide](https://developers.openai.com/cookbook/examples/whisper_prompting_guide) — 224-token limit, prompt formatting for vocabulary injection, style-vs-instruction behavior (HIGH confidence)
+- [Superwhisper](https://superwhisper.com/) — Custom vocabulary feature confirmed; snippets not documented (MEDIUM confidence)
+- [Raycast Wispr Flow Extension](https://www.raycast.com/carterm/wispr-flow) — History grouping labels (Today/Yesterday/This Week/Last Week/Older), sort options, WPM metadata per entry (MEDIUM confidence — third-party extension mirroring app's data model)
+- [A Fading Thought — AI Dictation True Differentiators](https://afadingthought.substack.com/p/best-ai-dictation-tools-for-mac) — Competitor philosophy analysis (LOW confidence — opinion piece)
+- [SwiftData Apple Developer Documentation](https://developer.apple.com/documentation/swiftdata) — `@Model`, `ModelContainer`, macOS 14+ requirement (HIGH confidence)
 
 ---
-*Feature research for: SpeechFlow v1.1 UI Revamp & Polish milestone*
-*Researched: 2026-03-26*
+
+*Feature research for: Wave v1.2 Companion App (history, dictionary, snippets)*
+*Researched: 2026-03-30*

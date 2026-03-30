@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** SpeechFlow v1.1 — UI Revamp, App Exclusion, Clipboard Persistence
-**Domain:** macOS menu bar push-to-talk dictation app — incremental v1.1 milestone
-**Researched:** 2026-03-26
+**Project:** Wave v1.2 — Companion App
+**Domain:** macOS dictation app — windowed companion with transcription history, custom dictionary, and text expansion snippets added to existing v1.1 menu-bar-only app
+**Researched:** 2026-03-30
 **Confidence:** HIGH
 
 ## Executive Summary
 
-SpeechFlow v1.1 is a well-scoped incremental milestone on top of a working v1.0 foundation. The app already has the correct architecture — SwiftUI/AppKit hybrid, service-oriented layer, ObservableObject state — so this milestone is about adding four capabilities, not rebuilding. Every required feature maps cleanly to native Apple frameworks with no third-party dependencies needed: NSWorkspace for app exclusion, CGWindowListCopyWindowInfo for fullscreen detection, NSPasteboard for clipboard persistence, and SwiftUI animation APIs for the overlay redesign. The recommended approach is to build in dependency order: design system first, then state machine refactor, clipboard persistence, overlay redesign, and finally app exclusion with its Settings UI.
+Wave v1.2 adds a companion window to an existing menu-bar dictation app. The well-worn macOS pattern for this class of app is a `NavigationSplitView`-based sidebar window managed as a SwiftUI `WindowGroup` scene, with SwiftData providing local SQLite persistence. All four new feature areas (companion shell, history, dictionary, snippets) build on top of a single shared `ModelContainer` initialized once in `FlowSpeechApp.init()` and injected into both the view hierarchy and AppDelegate-owned services. No new dependencies are required — the entire feature set is achievable with the macOS 14 SDK already in scope for the project.
 
-The central pattern is replacing dual `isRecording`/`isTranscribing` booleans with a single `RecordingPhase` enum — this unblocks all animation work and eliminates impossible boolean states. The "Flow Bar" pill overlay at bottom-center is the established pattern in this category (Wispr Flow uses this exact layout), and it's achievable with a handful of changes to window positioning and shape. The blue palette identity is pure design work requiring a new `DesignSystem.swift` constants file that all UI targets reference.
+The recommended build order is strictly dependency-driven: data models first, then `ModelContainer` wiring, then backend services (`HistoryService`, `DictionaryService`, `SnippetService`) wired into `AppDelegate.transcribe()`, then companion views last. This order means each phase is independently testable before building the next layer. The three pipeline hooks (dictionary prompt injection, snippet expansion, history save) are each single-`await`-call additions to an already-async function. Dictionary and snippets are the lowest-complexity features and should be built before the complex history UI, not after.
 
-The most consequential risks are operational rather than conceptual. CGEventTap silent disabling after code signing is a known macOS pitfall that can make the entire app appear broken post-build without any logged error. Animation timers running when the overlay is hidden will drain CPU across many sessions. Game/fullscreen detection via window geometry alone produces false positives on fullscreen Xcode or Terminal — the correct approach pairs an explicit user-configurable bundle ID list as the primary signal with geometry detection as a fallback. All five critical pitfalls have documented prevention strategies and must be addressed in the phase they appear, not patched later.
+The most consequential risks are architectural, not implementation-level. Using `NSHostingView` for the companion window instead of `WindowGroup` silently breaks `@Query` (blank data, no error). Toggling `NSApp.setActivationPolicy()` dynamically hides all open windows including the recording overlay. Both decisions are irreversible once the window infrastructure is built — they must be made correctly in the foundation phase. The other critical risk is unbounded history growth: a `fetchLimit` and retention policy must ship from day one, not be added retroactively.
 
 ---
 
@@ -19,135 +19,157 @@ The most consequential risks are operational rather than conceptual. CGEventTap 
 
 ### Recommended Stack
 
-All capability additions use native Apple system frameworks already imported in the codebase. No package manager changes are needed. The key additions are `NSWorkspace.didActivateApplicationNotification` (push-based app change observation, zero polling cost), `CGWindowListCopyWindowInfo` (fullscreen geometry detection, no Screen Recording permission needed for bounds-only), and SwiftUI `TimelineView` + `Canvas` for high-performance waveform rendering. The waveform is the one place where the existing `ForEach`-over-structs approach causes real performance problems at 20-30fps update rates; `Canvas` eliminates this with a single draw call per frame.
+The v1.1 codebase is left entirely untouched. All additions target the macOS 14 SDK with no SPM packages. The single architectural addition is a shared `ModelContainer` initialized in `FlowSpeechApp.init()` and threaded into AppDelegate via a `configure(modelContainer:)` method.
 
-The minimum macOS version is unspecified in PROJECT.md. The recommended baseline is macOS 13 (Ventura) — this excludes `PhaseAnimator` (macOS 14 only) but includes `TimelineView`, `Canvas`, and all AppKit APIs needed. If the team confirms macOS 14 minimum, `PhaseAnimator` becomes available and simplifies the animation state machine.
+See full details: [.planning/research/STACK.md](.planning/research/STACK.md)
 
 **Core technologies:**
-- `NSWorkspace.didActivateApplicationNotification`: Push-based frontmost app change observation — zero-cost when no switch occurs; already partially used in codebase
-- `CGWindowListCopyWindowInfo`: Fullscreen detection for other processes — compare `kCGWindowBounds` against `NSScreen.main.frame`; no special permissions needed for bounds
-- `TimelineView(.animation) + Canvas`: Waveform rendering at 20-30fps — replaces `ForEach` over `WaveformBar` views; eliminates SwiftUI diffing overhead
-- `NSWindow.Level.statusBar + .fullScreenAuxiliary`: Overlay visibility in all contexts — required for overlay to appear above macOS Spaces fullscreen apps
-- `withAnimation(.spring(duration:bounce:))`: State transition animations — available macOS 12+; covers all required animation needs without third-party libraries
-- `@AppStorage` with JSON-encoded `[String]`: Exclusion list persistence — consistent with existing UserDefaults patterns in the codebase
+- **SwiftData** (`@Model`, `@Query`, `ModelContainer`): Persistent storage for history, dictionary, snippets — explicitly chosen over GRDB in PROJECT.md; SQLite-backed with tight SwiftUI integration; macOS 14+ only (already in scope)
+- **SwiftUI `NavigationSplitView`**: Sidebar + detail layout — handles resize, collapse, and macOS conventions automatically; two-column layout is sufficient
+- **SwiftUI `WindowGroup` + `openWindow`**: Manages companion window lifecycle; `openWindow(id:)` de-duplicates (brings existing window to front); must be used over manual `NSWindow` for `@Query` to function correctly
+- **`NSApp.setActivationPolicy(_:)`**: Dock icon toggle — `.regular` when companion is open, `.accessory` when closed; must be committed to permanently after first open, never toggled dynamically mid-session
+
+**Critical SwiftData patterns to follow:**
+- Single shared `ModelContainer`, never multiple instances (confirmed crash bug with multiple containers)
+- `@ModelActor` for background saves from the transcription pipeline (HistoryService)
+- `@Query` with child-view-init trick for dynamic sorting
+- Explicit `try? modelContext.save()` after every insert (auto-save is unreliable)
+- Simple predicates only; group/filter in Swift after fetch (complex predicates hit compiler limits)
+- `VersionedSchema` defined from the v1 schema even if no migration is needed yet
 
 ### Expected Features
 
-The v1.1 milestone has six must-ship features, all P1. The dependency graph is well-defined: pill overlay and animations require the `RecordingPhase` enum; clipboard persistence is independent; game exclusion requires both HotkeyManager integration and a new Settings tab.
+The feature set is well-benchmarked against Wispr Flow, which ships an equivalent companion app. Wave v1.2 targets parity on all core features with two meaningful differentiators: dictionary injection directly into the Whisper API `prompt` parameter (competitors using black-box APIs cannot do this as precisely), and full ownership of the transcription pipeline end-to-end.
 
-**Must have (table stakes for this milestone):**
-- Pill overlay at bottom-center — replaces current top-positioned floating window; Wispr Flow's "Flow Bar" has established this as the expected pattern
-- Four-state visual progression (idle/recording/transcribing/done) — users need to know the app heard them and is working; distinct visual for each state
-- Spring animations on all state transitions — abrupt appearance and state changes feel broken; `.spring(duration: 0.4, bounce: 0.25)` is the correct API
-- Clipboard persistence toggle — the current 0.5s restore is a real v1.0 bug that actively loses user clipboard content; default ON
-- Game/fullscreen exclusion — hotkey conflicts in fullscreen games (League of Legends) are the primary reported user pain point; suppression must happen before recording starts
-- Blue palette applied throughout — `DesignSystem.swift` constants used by overlay, menu bar, settings
+See full details: [.planning/research/FEATURES.md](.planning/research/FEATURES.md)
 
-**Should have (P2, ship if time permits):**
-- "Add current app" button in exclusion settings — reads frontmost bundle ID in one click; reduces friction significantly
-- Bundle ID exclusion list UI with list display — manual text entry works but a list view is much better UX
+**Must have (table stakes):**
+- Companion window with sidebar navigation (History, Dictionary, Snippets) — macOS convention; tab bars are iOS, not macOS
+- Date-grouped history list (Today / Yesterday / This Week / Older) — flat lists are unusable at scale; Wispr Flow parity
+- Per-entry copy and delete actions — copy is the primary reason to open history
+- Word count and WPM per entry — computed at save time; Wispr Flow parity
+- Usage stats header (streak, total words, avg WPM) — habit-formation signal
+- Dictionary tab with Whisper `prompt` injection — core accuracy value prop; Wave differentiator
+- Snippets tab with post-processing trigger replacement — automation value prop
+- Dock presence when companion is open — macOS convention
 
-**Defer to v2+:**
-- Notch integration — only meaningful for MacBook Pro 2021+; universal bottom-center pill works for all Macs
-- Waveform amplitude tracking from mic buffer — decorative animated bars satisfy the UX need; real amplitude requires AVAudioEngine tap changes
-- macOS 16 pasteboard privacy handling — not broadly shipped; revisit when macOS 16 releases
+**Should have (competitive differentiators):**
+- Recording pipeline writes `TranscriptionEntry` on every successful transcription — without this, history is useless
+- Dictionary terms as Whisper prompt — Wave owns the full API call; competitors cannot do this as precisely
+- Usage streak (consecutive days) — Wispr Flow lacks aggregate streak; Wave differentiator
+
+**Defer (v1.2.x / v1.3+):**
+- Full-text history search — add when list grows past ~50 entries in real use
+- Audio playback per entry — requires audio file storage system; scope risk
+- Dynamic snippet variables (date, clipboard contents) — parser complexity; 80% of use cases are static
+- Bulk snippet import/export — only when power users request it
+- Auto-learn vocabulary from history — NLP complexity with false positives; no clear UX
 
 ### Architecture Approach
 
-The existing service-oriented architecture requires no structural changes — only targeted modifications to existing components and two new files (`AppExclusionService.swift`, `DesignSystem.swift`) plus one new view (`ExclusionListView.swift`). The most impactful change is adding `RecordingPhase` enum to `AppState` and deriving `isRecording`/`isTranscribing` from it, which is a backward-compatible refactor with approximately six call sites to update. `TextInserter` needs its clipboard-write operation separated from the paste operation — the write should always happen, paste is conditional on `autoInsertText` setting.
+The existing `AppDelegate.transcribe()` pipeline is the single integration point for all three new backend features. Three `await` calls are inserted into this already-async function: `dictionaryService.buildPrompt()` before the Whisper call, `snippetService.expand(text:)` after GPT cleanup, and `historyService.save(...)` after snippet expansion. No threading model changes are needed. The companion views are entirely decoupled from the pipeline — they observe the same SwiftData store via `@Query` and auto-refresh when background saves land.
 
-**Major components and changes:**
-1. `AppState` — add `recordingPhase: RecordingPhase`, `excludedAppBundleIDs: [String]`, `excludeFullscreenApps: Bool`
-2. `AppExclusionService` (new) — encapsulates `isFrontmostAppExcluded()` and `isAppFullscreen()` with `Set<String>` lookup for O(1) exclusion check; reads UserDefaults directly (thread-safe for reads from CGEventTap callback)
-3. `DesignSystem.swift` (new) — color constants, spacing, typography; referenced by all UI files
-4. `RecordingOverlayView` (redesign) — pill shape via `Capsule()`, bottom-center positioning, phase-driven rendering via `switch appState.recordingPhase`, spring transitions
-5. `TextInserter` — remove clipboard restore block; split into `placeOnClipboard()` + `simulatePaste()`
-6. `AppDelegate` — add exclusion check before `startRecording()`, alpha fade animations on overlay show/hide, `showCompletionBriefly()` for 0.8s done-state flash
-7. `SettingsView` + `ExclusionListView` (new) — 6th settings tab for exclusion list management
+See full details: [.planning/research/ARCHITECTURE.md](.planning/research/ARCHITECTURE.md)
+
+**Major components:**
+1. **`HistoryService` (`@ModelActor`)** — background actor that saves `TranscriptionEntry` records after each dictation; Swift compiler enforces thread safety via the macro
+2. **`DictionaryService`** — reads `DictionaryWord` records, builds comma-separated prompt string; returns `nil` if dictionary is empty (preserving existing WhisperService behavior unchanged)
+3. **`SnippetService`** — pure string transformation; reads `Snippet` records, applies case-insensitive trigger replacement to final text before paste; must run after GPT cleanup, before `TextInserter`
+4. **`CompanionAppView` (NavigationSplitView)** — root view of the `WindowGroup` scene; sidebar with Home/Dictionary/Snippets; detail column switches on selection
+5. **`HomeView`** — history list with `@Query`, date-section grouping via `Dictionary(grouping:)` in the view layer, usage stats header; most complex view — built last
+6. **`DictionaryView` + `SnippetsView`** — CRUD views using `@Query` + `@Environment(\.modelContext)`; straightforward list-with-add-sheet pattern
+
+**Build order:** Models → ModelContainer → HistoryService + pipeline wiring → DictionaryService + DictionaryView → SnippetService + SnippetsView → CompanionAppView + HomeView + dock toggle
 
 ### Critical Pitfalls
 
-1. **NSWindow level blocks overlay in fullscreen Spaces** — Use `.statusBar` level with `[.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]`. Must be set from the start of Phase 1; patching it later is much harder. Separate game exclusion (suppress hotkey) from overlay layering (overlay visible in non-game fullscreen) as distinct problems.
+See full details: [.planning/research/PITFALLS.md](.planning/research/PITFALLS.md)
 
-2. **CGEventTap silent disable after code signing** — Non-nil `eventTap` is not proof the tap is functional. Add `CGEvent.tapIsEnabled(tap:)` health check on a 2-second timer. If disabled and re-enable fails, surface an error in the menu bar icon. Address before shipping any UI that might trigger TCC re-evaluation.
+1. **`setActivationPolicy(.regular/.accessory)` hides all open windows** — calling this mid-session causes the recording overlay and settings window to disappear. Prevention: commit to permanent dock presence after first companion open; persist a `hasEverOpenedCompanion` flag; never toggle policy mid-session; set activation policy in `applicationWillFinishLaunching`, not `applicationDidFinishLaunching`.
 
-3. **Clipboard race condition with restore** — Current 0.5s restore can overwrite the user's new copy. Add `changeCount` guard: capture `pasteboard.changeCount` before write, skip restore if count has advanced. Add `org.nspasteboard.TransientType` marker so clipboard managers don't log transcriptions.
+2. **`@Query` silently fails in `NSHostingView`-hosted views** — history list shows empty with no error. Prevention: companion window must use SwiftUI `WindowGroup` with `.modelContainer()` at the scene level; do not create a manual `NSWindow` for the companion.
 
-4. **Game/fullscreen detection false positives** — CGWindow frame comparison alone will suppress dictation in fullscreen Xcode, Terminal, Safari. Use bundle ID exclusion list as the primary signal (explicit, no false positives) and geometry detection as an opt-in secondary. Never trigger suppression on geometry alone by default.
+3. **Passing `PersistentModel` instances across actor boundaries crashes** — SwiftData models are not `Sendable`; crash is non-deterministic and surfaces in production. Prevention: map to a plain `Sendable` struct before any actor boundary crossing; `HistoryService` writes using its own `@ModelActor` context, never passing model objects out.
 
-5. **Animation timers running on hidden overlay** — `withAnimation(.repeatForever)` started in `.onAppear` continues executing after `orderOut(nil)`. Gate all animations on a `@State var isVisible` flag. Verify CPU usage is <1% between sessions in Activity Monitor before shipping.
+4. **Companion window opening steals focus from dictation target** — `NSApp.activate()` changes frontmost app, causing `TextInserter` to paste into the companion instead of the user's document. Prevention: snapshot `NSWorkspace.shared.frontmostApplication` at recording start; restore focus before `Cmd+V`; gate companion window open behind `appState.phase == .idle`.
+
+5. **Unbounded history store causes slow opens after months of use** — a moderate user accumulates 7,000+ records/year; `@Query` with no limit loads all into memory. Prevention: set `fetchLimit = 200` in `@Query`; implement 90-day retention at save time; ship both from day one, not retroactively.
 
 ---
 
 ## Implications for Roadmap
 
-Based on the dependency graph and pitfall-to-phase mapping, the research converges on a clean four-phase build order. All four research files agree on this ordering independently.
+Based on the dependency graph from FEATURES.md and the build order from ARCHITECTURE.md, a 4-phase structure is strongly supported by the research.
 
-### Phase 1: Foundation — Design System + State Machine + Animation Architecture
+### Phase 1: Foundation — Companion Window Shell + Data Layer
 
-**Rationale:** Everything else depends on `RecordingPhase` enum and `DesignSystem.swift`. The two most dangerous pitfalls (CGEventTap silent disable, animation CPU drain) must be addressed here before UI work begins, because UI reconstruction triggers TCC re-evaluation and animation architecture is much harder to add after the overlay is designed.
+**Rationale:** The companion window is required by all three feature tabs. The `ModelContainer` is required by all three services. Both must exist before any feature work begins. The windowing architecture decision (`WindowGroup`, not `NSHostingView`) and the activation policy strategy are irreversible once made — they must be correct here or the entire feature set breaks in silent, hard-to-diagnose ways (Pitfalls 1, 2, 11).
 
-**Delivers:** `DesignSystem.swift` with blue palette constants; `RecordingPhase` enum in `AppState`; backward-compatible derivation of `isRecording`/`isTranscribing`; CGEventTap health check timer; animation gating via `isVisible` flag on overlay; `.fullScreenAuxiliary` window collection behavior.
+**Delivers:** An openable companion window with `NavigationSplitView` sidebar (Home, Dictionary, Snippets sections in empty state), SwiftData schema (`TranscriptionEntry`, `DictionaryWord`, `Snippet`) compiled and schema-versioned, `ModelContainer` wired into both scene and AppDelegate via `configure(modelContainer:)`, dock icon appearance/disappearance working correctly, `NotificationCenter` bridge for `openWindow` from AppDelegate.
 
-**Addresses:** Visible state progression (table stakes), blue palette identity (differentiator)
+**Addresses:** Sidebar navigation, dock presence (table stakes from FEATURES.md)
 
-**Avoids:** CGEventTap silent disable (Pitfall 2), animation CPU drain (Pitfall 5), NSWindow level conflict (Pitfall 1)
+**Avoids:** Pitfall 1 (activation policy hides all windows), Pitfall 2 (@Query silent failure in NSHostingView), Pitfall 4 (companion open steals focus), Pitfall 11 (openWindow fails from AppDelegate)
 
-**Research flag:** Standard patterns — no additional research needed. All APIs are native AppKit/SwiftUI.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. `WindowGroup`, `NavigationSplitView`, and `setActivationPolicy` are all well-documented by multiple HIGH-confidence sources.
 
-### Phase 2: Clipboard Persistence
+---
 
-**Rationale:** Independent of overlay redesign and exclusion. Small, high-value, fixes a real v1.0 bug. Ship early to validate that the clipboard architecture is correct before building more on top of TextInserter.
+### Phase 2: History — Pipeline Save + HomeView
 
-**Delivers:** `placeOnClipboard()` / `simulatePaste()` separation in `TextInserter`; `org.nspasteboard.TransientType` marker; `changeCount` race condition guard; Settings toggle for persistence behavior; transcription available on clipboard even when `autoInsertText` is off.
+**Rationale:** History is the highest user-value feature and requires wiring the transcription pipeline. `HistoryService` should be built and verified against the live SQLite store before `HomeView` is written, so the data layer is validated independently. `fetchLimit` and retention policy must ship in this phase (Pitfall 5).
 
-**Addresses:** Clipboard persistence (P1 table stakes)
+**Delivers:** `HistoryService` (`@ModelActor`) saving `TranscriptionEntry` after each transcription; `HomeView` with date-grouped list (Today/Yesterday/This Week/Older), per-entry copy/delete, word count and WPM per entry, usage stats header (streak, total words, avg WPM); `fetchLimit = 200` and 90-day retention from day one.
 
-**Avoids:** Clipboard race condition (Pitfall 3), clipboard manager logging issue
+**Addresses:** Timestamped transcription list, date grouping, copy/delete actions, word count + WPM, usage stats (all P1 from FEATURES.md)
 
-**Research flag:** Standard patterns — well-documented NSPasteboard behavior. No additional research needed.
+**Avoids:** Pitfall 3 (PersistentModel across actors — use Sendable snapshots), Pitfall 5 (unbounded store — fetchLimit + retention), Pitfall 9 (@Query re-fetch flash — background context save + `includePendingChanges: false`)
 
-### Phase 3: Overlay Redesign + Animations
+**Research flag:** Standard patterns — `@ModelActor`, `@Query`, `Dictionary(grouping:)` for date sections are all well-documented. No research phase needed.
 
-**Rationale:** Depends on `RecordingPhase` (Phase 1) and must be built after the state machine is in place. This is the largest UI surface — pill shape, bottom positioning, phase-driven rendering, spring animations, alpha fade, done-state flash. Doing this after clipboard persistence means one fewer variable when testing the redesign.
+---
 
-**Delivers:** `RecordingOverlayView` redesigned with `Capsule()` pill, bottom-center positioning via `NSScreen.main?.visibleFrame`, `switch appState.recordingPhase` rendering, `TimelineView` + `Canvas` waveform, `NSAnimationContext` alpha fade on show/hide, 0.8s done-state flash via `showCompletionBriefly()`.
+### Phase 3: Dictionary + Snippets — Pipeline Features
 
-**Addresses:** Pill overlay at bottom-center (P1), four-state visual progression (P1), spring animations (P1), blue palette on overlay (P1)
+**Rationale:** Dictionary and snippets share the same structure (CRUD views + a pipeline hook) and are independent of each other, making them natural Phase 3 siblings. Dictionary goes first because its pipeline hook is a zero-risk modification to the existing optional `prompt:` parameter already accepted by `WhisperService`. Snippets go second because the correct position in the pipeline (after GPT cleanup, before paste) is easier to verify once the full pipeline has been exercised.
 
-**Avoids:** Animation timers on hidden overlay (Pitfall 5, already gated in Phase 1)
+**Delivers:** `DictionaryService` with Whisper `prompt` injection; `DictionaryView` CRUD with character counter and 800-char prompt cap warning; `SnippetService` with case-insensitive trigger replacement; `SnippetsView` CRUD; snippet monitor pause/resume around the recording→insertion window.
 
-**Research flag:** Standard patterns — SwiftUI animation APIs are well-documented. May want to validate `TimelineView` + `Canvas` performance on macOS 13 if targeting Ventura minimum.
+**Addresses:** Dictionary tab + Whisper prompt injection, snippets tab + post-processing replacement (P1 features from FEATURES.md)
 
-### Phase 4: App Exclusion + Settings UI
+**Avoids:** Pitfall 6 (prompt silently truncated — 800-char cap, counter in UI), Pitfall 7 (snippet fires during dictation — pause monitor), Pitfall 12 (special chars break prompt — sanitize at entry), Pitfall 13 (snippet fires on synthetic paste — `isSynthesizingPaste` flag)
 
-**Rationale:** Most complex feature — requires new service, new UI, and integration with HotkeyManager callback path. Building last avoids its Settings tab work being blocked by UI churn from Phase 3. The CGWindowListCopyWindowInfo path needs targeted testing on multiple window configurations.
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. Whisper `prompt` parameter is documented by OpenAI (HIGH confidence); string replacement for snippets is trivial.
 
-**Delivers:** `AppExclusionService.swift` with `isFrontmostAppExcluded()` and `isAppFullscreen()` using `Set<String>` for O(1) lookup; exclusion check in `AppDelegate.handleFlagsChanged()` before `startRecording()`; `ExclusionListView.swift`; 6th Settings tab; default exclusion list including `com.riotgames.LeagueofLegends`; auto-detect fullscreen toggle (opt-in, default off to avoid false positives).
+---
 
-**Addresses:** Game/fullscreen exclusion (P1), bundle ID exclusion list UI (P2)
+### Phase 4: Integration Polish — Focus Restoration + Edge Cases
 
-**Avoids:** Game detection false positives (Pitfall 4), AXUIElement fullscreen detection anti-pattern
+**Rationale:** After the three feature phases exist independently, interaction edge cases between subsystems become testable. Focus restoration (Pitfall 4) and overlay first-responder behavior (Pitfall 14) require both the recording pipeline and companion window to exist simultaneously. This phase uses the "Looks Done But Isn't" checklist from PITFALLS.md as its acceptance criteria.
 
-**Research flag:** Needs careful testing. `CGWindowListCopyWindowInfo` behavior changed in macOS 26 (all status items attributed to Control Center per FB18327911). Test exclusion list against: League of Legends bundle IDs, fullscreen Safari, fullscreen Xcode, and fullscreen Terminal — all should behave correctly.
+**Delivers:** Target app focus snapshotted at recording start and restored before paste; recording overlay prevented from becoming key window (`canBecomeKey = false`); companion window open gated behind `appState.phase == .idle`; full acceptance test pass against PITFALLS.md checklist.
+
+**Addresses:** Focus restoration correctness, overlay/companion interaction, regression validation
+
+**Avoids:** Pitfall 4 (focus stealing), Pitfall 14 (overlay steals first responder from companion text fields)
+
+**Research flag:** Standard patterns — skip `/gsd:research-phase`. AppKit window management APIs are stable and well-documented.
+
+---
 
 ### Phase Ordering Rationale
 
-- `DesignSystem.swift` and `RecordingPhase` enum are pure prerequisites — nothing else can be built correctly without them
-- Clipboard persistence is the most isolated feature; early shipping validates the TextInserter refactor independently
-- Overlay redesign cannot start until phase-driven state exists to render against
-- App exclusion has the most test surface (edge cases with different apps and macOS versions) so it benefits from being last when the team has full project context
-- All five critical pitfalls map to Phase 1 (3 pitfalls) or Phase 3-4 (1 pitfall each); addressing them in-phase rather than as post-hoc fixes is the research recommendation
+- **Foundation before features:** `WindowGroup` and `ModelContainer` are hard prerequisites for every feature tab. This is not optional — deferring them creates unbuildable features.
+- **Pipeline services before views:** `HistoryService` verified against a live SQLite store before `HomeView` is built means data layer bugs are caught without UI noise. The pattern holds for Dictionary and Snippets too.
+- **Dictionary before snippets:** Dictionary prompt injection is genuinely zero-risk (nil-safe optional parameter already exists on WhisperService). Snippets introduce a new event monitoring concern that benefits from seeing the full pipeline first.
+- **Integration polish last:** Edge cases involving multiple subsystems (recording + companion window open simultaneously) can only be tested and fixed after both subsystems exist.
+- **All critical pitfalls are addressed in-phase**, not patched on: Pitfalls 1/2/4/11 in Phase 1, Pitfalls 3/5/9 in Phase 2, Pitfalls 6/7/12/13 in Phase 3, Pitfalls 8/14 in Phase 4.
 
 ### Research Flags
 
-Phases needing deeper research during planning:
-- **Phase 4 (App Exclusion):** The `CGWindowListCopyWindowInfo` regression in macOS 26 (FB18327911 — status items attributed to Control Center) needs validation on the actual target OS. If the team is shipping for macOS 15+, confirm the bounds-comparison path still works. The League of Legends bundle ID split (`com.riotgames.LeagueofLegends.LeagueClientUx` for client vs `com.riotgames.LeagueofLegends` for game process) needs hands-on verification.
+**Skip research phase for all phases.** The entire feature set uses well-documented Apple-first APIs with multiple HIGH-confidence sources. The pitfalls are catalogued with concrete prevention patterns. No phase involves third-party integrations, niche APIs, or underdocumented behavior.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Foundation):** CGEventTap health check, RecordingPhase enum, window collection behavior — all well-documented in official Apple docs and confirmed in codebase read.
-- **Phase 2 (Clipboard Persistence):** NSPasteboard change count, TransientType marker — fully documented at nspasteboard.org and Apple developer docs.
-- **Phase 3 (Overlay Redesign):** SwiftUI spring animations, TimelineView + Canvas — WWDC23 documented, stable APIs. macOS 13 vs 14 compatibility is the only decision point (PhaseAnimator availability).
+If a spike is warranted anywhere, the `setActivationPolicy` timing (the 0.1s delay for avoiding window-hiding behavior) is best validated with a targeted build test in Phase 1 rather than a research phase.
 
 ---
 
@@ -155,43 +177,50 @@ Phases with standard patterns (skip research-phase):
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All APIs are native Apple frameworks verified against official docs and the existing codebase. No third-party dependencies introduced. Version compatibility table fully documented in STACK.md. |
-| Features | MEDIUM | Table stakes and must-have features are HIGH confidence based on competitor analysis (Wispr Flow, Superwhisper) and Apple HIG patterns. Competitor internals (their exact exclusion implementation) are LOW confidence — not publicly documented. |
-| Architecture | HIGH | Architecture research read the actual codebase directly. All component boundaries, modification scopes, and integration points verified against existing Swift files. Build order is dependency-driven, not speculative. |
-| Pitfalls | HIGH for clipboard/CGEventTap (well-documented, multiple sources), MEDIUM for game/fullscreen detection (platform-specific edge cases, one known macOS 26 regression) | |
+| Stack | HIGH | All technologies are official Apple APIs with no guesswork. SwiftData bugs are catalogued from Apple Developer Forums and community analysis with concrete mitigations. |
+| Features | HIGH | Core features verified against Wispr Flow public docs and changelog. Whisper prompt mechanics verified against OpenAI official cookbook. Competitor internals are LOW confidence but only affect anti-feature decisions, not build decisions. |
+| Architecture | HIGH | Codebase read directly (AppDelegate.swift, FlowSpeechApp.swift, WhisperService.swift confirmed 2026-03-30). Build order derived from actual dependency graph. Integration points are specific line numbers in existing files. |
+| Pitfalls | HIGH | Critical pitfalls (activation policy, @Query environment, PersistentModel thread safety) each have multiple corroborating sources including Apple Developer Forums threads. Prevention patterns are concrete and implementation-ready. |
 
-**Overall confidence:** HIGH
+**Overall confidence: HIGH**
 
 ### Gaps to Address
 
-- **macOS minimum version:** PROJECT.md does not specify. The choice between macOS 13 (excludes `PhaseAnimator`) and macOS 14 (enables `PhaseAnimator`) affects Phase 3 animation implementation. Decide before Phase 1 begins. Recommendation: macOS 13 (Ventura) for broadest reach; use manual `RecordingPhase` state machine instead of `PhaseAnimator`.
-- **CGWindowListCopyWindowInfo on macOS 26:** The known regression (FB18327911) attributes all status bar items to Control Center. Need to validate whether the `kCGWindowOwnerPID` filter path used for fullscreen detection is affected. This is specific to macOS 26 beta and may be resolved before general availability.
-- **Multi-monitor overlay positioning:** The research recommends bottom-center of `NSScreen.main` but the user may be working on a secondary monitor. PITFALLS.md flags this in the "Looks Done But Isn't" checklist. A follow-up decision: use `NSScreen.main` (simpler) or detect the screen containing the active window via AX API (correct but more complex).
-- **League of Legends bundle ID verification:** The research identifies `com.riotgames.LeagueofLegends` (game) and `com.riotgames.LeagueofLegends.LeagueClientUx` (client) as the relevant bundle IDs. Both should be in the default exclusion list, but this needs hands-on confirmation.
+- **`setActivationPolicy` exact timing:** The 0.1s delay in ARCHITECTURE.md and `applicationWillFinishLaunching` timing in PITFALLS.md may need adjustment on specific hardware. Validate with a spike in Phase 1.
+- **Snippet partial vs. whole-word matching:** ARCHITECTURE.md flags this as "need to define rules before implementation." Wispr Flow strips punctuation on standalone triggers. The exact behavior for Wave should be decided before Phase 3 begins.
+- **`@Query` pagination UX for large histories:** `@Query` does not support cursor-based pagination natively. Phase 2 will need to implement a manual `FetchDescriptor` with increasing offset for "load more" behavior — implementation pattern should be decided at Phase 2 planning time.
+- **`VersionedSchema` forward planning:** The v1 schema should sketch anticipated v1.3 fields (`sourceAppBundleID`, audio file path) during Phase 1 data model work so lightweight migrations can be planned in advance.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Apple Developer Documentation — NSWorkspace, NSRunningApplication, CGWindowListCopyWindowInfo, NSPasteboard, NSWindow, SwiftUI animation APIs
-- WWDC23 Session 10157 "Wind your way through advanced animations in SwiftUI" — PhaseAnimator, KeyframeAnimator introduction
-- WWDC23 Session 10158 "Animate with Springs" — spring(duration:bounce:) API
-- Direct codebase analysis: AppDelegate.swift, TextInserter.swift, HotkeyManager.swift, RecordingOverlayView.swift, FlowSpeechApp.swift (all read 2026-03-26)
-- Apple Developer Forums thread/792917 — confirms no `isFullScreen` on NSRunningApplication; CGWindow bounds is the correct approach
+- [Apple Developer Documentation: SwiftData](https://developer.apple.com/documentation/swiftdata) — ModelContainer, @Model, @Query, macOS 14+ requirements
+- [Apple Developer Documentation: NavigationSplitView](https://developer.apple.com/documentation/swiftui/navigationsplitview) — sidebar layout patterns
+- [Apple Developer Documentation: openWindow](https://developer.apple.com/documentation/swiftui/environmentvalues/openwindow) — WindowGroup scene management
+- [WWDC23: Dive deeper into SwiftData](https://developer.apple.com/videos/play/wwdc2023/10196/) — ModelContainer ownership, sharing between scenes and services
+- [WWDC24: What's new in SwiftData](https://developer.apple.com/videos/play/wwdc2024/10137/) — @ModelActor macro, background context patterns
+- [OpenAI Whisper Prompting Guide](https://cookbook.openai.com/examples/whisper_prompting_guide) — 224-token limit, prompt formatting for vocabulary injection
+- [OpenAI Speech-to-Text API](https://platform.openai.com/docs/guides/speech-to-text) — prompt parameter behavior confirmed
+- [Wispr Flow Snippets Documentation](https://docs.wisprflow.ai/articles/5784437944-create-and-use-snippets) — trigger matching, punctuation stripping, 60-char trigger limit, 4,000-char expansion limit
+- [Wispr Flow History Changelog](https://roadmap.wisprflow.ai/changelog/view-your-previous-history-and-report-transcriptions) — date grouping labels, retry transcript, audio playback features
+- Direct codebase analysis: AppDelegate.swift, FlowSpeechApp.swift, WhisperService.swift, TextInserter.swift (read 2026-03-30)
 
 ### Secondary (MEDIUM confidence)
-- NSPasteboard.org — TransientType and clipboard manager marker conventions
-- Gertrude App blog — NSWorkspace.shared.runningApplications patterns
-- Wispr Flow changelog — Flow Bar positioning and interaction model (competitor analysis)
-- Superwhisper changelog — animation and overlay design patterns
-- NSHostingView Sequoia centering changes — Furnace Creek Software (2024-12-07)
-- Daniel Raffel — CGEvent Taps and Code Signing: The Silent Disable Race (2026-02-19)
+- [SwiftData Pitfalls — Wade Tregaskis](https://wadetregaskis.com/swiftdata-pitfalls/) — comprehensive SwiftData bug catalogue; consistent with Apple forum reports
+- [SwiftData Issues in macOS 14 — Michael Tsai](https://mjtsai.com/blog/2024/06/04/swiftdata-issues-in-macos-14-and-ios-17/) — aggregation of confirmed forum reports
+- [Taking SwiftData Further: @ModelActor — Medium](https://killlilwinters.medium.com/taking-swiftdata-further-modelactor-swift-concurrency-and-avoiding-mainactor-pitfalls-3692f61f2fa1) — @ModelActor threading pitfalls
+- [Concurrent Programming in SwiftData — fatbobman.com](https://fatbobman.com/en/posts/concurret-programming-in-swiftdata/) — PersistentModel cross-actor crash behavior
+- [SwiftData Fetching Pending Changes — Use Your Loaf](https://useyourloaf.com/blog/swiftdata-fetching-pending-changes/) — @Query re-fetch over-notification behavior
+- [Fine-Tuning macOS App Activation Behavior — artlasovsky.com](https://artlasovsky.com/fine-tuning-macos-app-activation-behavior) — setActivationPolicy timing and flash prevention
+- [Apple Developer Forums: ModelContext not available in NSHostingView](https://developer.apple.com/forums/thread/740864) — @Query silent failure confirmed
+- [Deep dive into dynamic SwiftData queries — Medium/Gaignet](https://medium.com/@matgnt/deep-dive-into-dynamic-swiftdata-queries-9d029568dd8f) — child-view-init pattern for dynamic @Query
+- [SwiftUI for Mac 2024 — TrozWare](https://troz.net/post/2024/swiftui-mac-2024/) — WindowGroup variants on macOS
 
 ### Tertiary (LOW confidence)
-- FB18327911: CGWindowListCopyWindowInfo regression in macOS 26 — needs validation; filed as feedback, not confirmed fixed
-- Competitor exclusion feature internals (Wispr Flow, Superwhisper) — not publicly documented; inferred from behavior
+- [A Fading Thought — AI Dictation True Differentiators](https://afadingthought.substack.com/p/best-ai-dictation-tools-for-mac) — competitor philosophy analysis; opinion piece used only for anti-feature decisions
 
 ---
-*Research completed: 2026-03-26*
+*Research completed: 2026-03-30*
 *Ready for roadmap: yes*
