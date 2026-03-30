@@ -28,6 +28,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let cleanupService = TextCleanupService()
     let textInserter = TextInserter()
     let exclusionService = AppExclusionService()
+    let dictionaryService = DictionaryService.shared
+    let snippetService = SnippetService.shared
     
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
@@ -305,12 +307,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("API key found, calling Whisper API with model: \(appState.selectedModel.rawValue)")
             #endif
 
+            // Build Whisper prompt from dictionary vocabulary hints
+            var whisperPrompt: String? = nil
+            if let container = modelContainer {
+                let bgContext = ModelContext(container)
+                let descriptor = FetchDescriptor<DictionaryWord>(
+                    sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+                )
+                if let words = try? bgContext.fetch(descriptor) {
+                    whisperPrompt = dictionaryService.buildPrompt(words: words)
+                }
+            }
+
             // Transcribe using Whisper API
             let transcription = try await whisperService.transcribe(
                 audioURL: audioURL,
                 apiKey: apiKey,
                 model: appState.selectedModel,
-                language: appState.language == "auto" ? nil : appState.language
+                language: appState.language == "auto" ? nil : appState.language,
+                prompt: whisperPrompt
             )
 
             // Post-process: run Smart Cleanup via GPT-4o-mini if enabled
@@ -318,6 +333,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if appState.smartCleanup {
                 finalText = await cleanupService.cleanup(text: transcription, apiKey: apiKey)
             }
+
+            // Post-transcription expansion: abbreviations then snippets (D-08 pipeline order)
+            if let container = modelContainer {
+                let bgContext = ModelContext(container)
+                let dictWords = (try? bgContext.fetch(FetchDescriptor<DictionaryWord>())) ?? []
+                let snippets = (try? bgContext.fetch(FetchDescriptor<Snippet>())) ?? []
+                finalText = dictionaryService.expand(text: finalText, words: dictWords)
+                finalText = snippetService.expand(text: finalText, snippets: snippets)
+            }
+
+            #if DEBUG
+            if whisperPrompt != nil {
+                print("Whisper prompt: \(whisperPrompt!.prefix(100))...")
+            }
+            print("Final text after expansion: \(finalText.prefix(100))...")
+            #endif
 
             // Save transcription to SwiftData (D-01: always save, even if paste fails — D-02)
             let wordCount = finalText.split(separator: " ").count
