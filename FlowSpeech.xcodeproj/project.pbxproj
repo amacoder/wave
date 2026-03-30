@@ -23,6 +23,16 @@
 		A10000010000000000000016 /* AppExclusionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000016 /* AppExclusionService.swift */; };
 		A10000010000000000000017 /* ExclusionSettingsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000017 /* ExclusionSettingsTab.swift */; };
 		A10000010000000000000018 /* TextCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000018 /* TextCleanupService.swift */; };
+		A10000010000000000000019 /* TranscriptionEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000019 /* TranscriptionEntry.swift */; };
+		A10000010000000000000020 /* DictionaryWord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000020 /* DictionaryWord.swift */; };
+		A10000010000000000000021 /* Snippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000021 /* Snippet.swift */; };
+		A10000010000000000000022 /* CompanionWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000022 /* CompanionWindowView.swift */; };
+		A10000010000000000000023 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000023 /* SidebarView.swift */; };
+		A10000010000000000000024 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000024 /* HomeView.swift */; };
+		A10000010000000000000025 /* DictionaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000025 /* DictionaryView.swift */; };
+		A10000010000000000000026 /* SnippetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000026 /* SnippetsView.swift */; };
+		A10000010000000000000027 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000027 /* EmptyStateView.swift */; };
+		A10000010000000000000028 /* WindowAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000028 /* WindowAccessor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +54,16 @@
 		A10000020000000000000016 /* AppExclusionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppExclusionService.swift; sourceTree = "<group>"; };
 		A10000020000000000000017 /* ExclusionSettingsTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExclusionSettingsTab.swift; sourceTree = "<group>"; };
 		A10000020000000000000018 /* TextCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextCleanupService.swift; sourceTree = "<group>"; };
+		A10000020000000000000019 /* TranscriptionEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionEntry.swift; sourceTree = "<group>"; };
+		A10000020000000000000020 /* DictionaryWord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryWord.swift; sourceTree = "<group>"; };
+		A10000020000000000000021 /* Snippet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snippet.swift; sourceTree = "<group>"; };
+		A10000020000000000000022 /* CompanionWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWindowView.swift; sourceTree = "<group>"; };
+		A10000020000000000000023 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		A10000020000000000000024 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		A10000020000000000000025 /* DictionaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryView.swift; sourceTree = "<group>"; };
+		A10000020000000000000026 /* SnippetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetsView.swift; sourceTree = "<group>"; };
+		A10000020000000000000027 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		A10000020000000000000028 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
 		A10000030000000000000001 /* FlowSpeech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlowSpeech.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -73,6 +93,7 @@
 				A10000020000000000000002 /* AppDelegate.swift */,
 				A10000020000000000000015 /* DesignSystem.swift */,
 				A10000050000000000000003 /* Services */,
+				A10000050000000000000007 /* Models */,
 				A10000050000000000000004 /* Views */,
 				A10000050000000000000005 /* Resources */,
 				A10000020000000000000013 /* FlowSpeech.entitlements */,
@@ -103,8 +124,41 @@
 				A10000020000000000000010 /* OnboardingView.swift */,
 				A10000020000000000000011 /* MenuBarPopoverView.swift */,
 				A10000020000000000000017 /* ExclusionSettingsTab.swift */,
+				A10000050000000000000008 /* CompanionWindow */,
+				A10000050000000000000009 /* Shared */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A10000050000000000000007 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A10000020000000000000019 /* TranscriptionEntry.swift */,
+				A10000020000000000000020 /* DictionaryWord.swift */,
+				A10000020000000000000021 /* Snippet.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A10000050000000000000008 /* CompanionWindow */ = {
+			isa = PBXGroup;
+			children = (
+				A10000020000000000000022 /* CompanionWindowView.swift */,
+				A10000020000000000000023 /* SidebarView.swift */,
+				A10000020000000000000024 /* HomeView.swift */,
+				A10000020000000000000025 /* DictionaryView.swift */,
+				A10000020000000000000026 /* SnippetsView.swift */,
+			);
+			path = CompanionWindow;
+			sourceTree = "<group>";
+		};
+		A10000050000000000000009 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A10000020000000000000027 /* EmptyStateView.swift */,
+				A10000020000000000000028 /* WindowAccessor.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		A10000050000000000000005 /* Resources */ = {
@@ -207,6 +261,16 @@
 				A10000010000000000000011 /* MenuBarPopoverView.swift in Sources */,
 				A10000010000000000000017 /* ExclusionSettingsTab.swift in Sources */,
 				A10000010000000000000018 /* TextCleanupService.swift in Sources */,
+				A10000010000000000000019 /* TranscriptionEntry.swift in Sources */,
+				A10000010000000000000020 /* DictionaryWord.swift in Sources */,
+				A10000010000000000000021 /* Snippet.swift in Sources */,
+				A10000010000000000000022 /* CompanionWindowView.swift in Sources */,
+				A10000010000000000000023 /* SidebarView.swift in Sources */,
+				A10000010000000000000024 /* HomeView.swift in Sources */,
+				A10000010000000000000025 /* DictionaryView.swift in Sources */,
+				A10000010000000000000026 /* SnippetsView.swift in Sources */,
+				A10000010000000000000027 /* EmptyStateView.swift in Sources */,
+				A10000010000000000000028 /* WindowAccessor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

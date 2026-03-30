@@ -9,11 +9,15 @@ import SwiftUI
 import AppKit
 import Carbon.HIToolbox
 import Combine
+import SwiftData
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var recordingWindow: NSWindow?
     var settingsWindow: NSWindow?
+    var companionWindow: NSWindow?
+    var originalWindowDelegate: NSWindowDelegate?
+    var modelContainer: ModelContainer?
     
     let appState = AppState()
     let hotkeyManager = HotkeyManager()
@@ -543,3 +547,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 // Import for microphone permission check
 import AVFoundation
+
+// MARK: - NSWindowDelegate (companion window hide-on-close)
+
+extension AppDelegate: NSWindowDelegate {
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // Hide companion window instead of destroying it
+        sender.orderOut(nil)
+        // Restore accessory policy with a delay to prevent focus-stealing flicker
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            NSApp.setActivationPolicy(.accessory)
+        }
+        return false
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        originalWindowDelegate?.windowDidBecomeKey?(notification)
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        originalWindowDelegate?.windowDidResignKey?(notification)
+    }
+}

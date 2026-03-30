@@ -7,12 +7,34 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct FlowSpeechApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
+
+    let modelContainer: ModelContainer
+
+    init() {
+        do {
+            modelContainer = try ModelContainer(
+                for: TranscriptionEntry.self, DictionaryWord.self, Snippet.self
+            )
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+        // Share container with AppDelegate for the transcription save pipeline (Phase 6)
+        appDelegate.modelContainer = modelContainer
+    }
+
     var body: some Scene {
+        WindowGroup(id: "companion") {
+            CompanionWindowView()
+        }
+        .modelContainer(modelContainer)
+        .defaultSize(width: 800, height: 600)
+        .windowResizability(.contentMinSize)
+
         Settings {
             EmptyView()
         }

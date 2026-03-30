@@ -2,9 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI Revamp & Polish
-status: unknown
-stopped_at: Completed quick-260326-p3m (Smart Cleanup post-processing)
-last_updated: "2026-03-26T18:10:00.000Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 05-01 (Companion Shell Foundation)
+last_updated: "2026-03-30T09:31:19.408Z"
+last_activity: 2026-03-30
 progress:
   total_phases: 4
   completed_phases: 4
@@ -52,6 +53,7 @@ Plan: 2 of 2 (all plans complete)
 | Phase 03-overlay-redesign P01 | 12 | 2 tasks | 3 files |
 | Phase 04-app-exclusion P01 | 2 | 2 tasks | 3 files |
 | Phase 04-app-exclusion P02 | 3 | 2 tasks | 3 files |
+| Phase 05-companion-shell P01 | 4 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -82,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase 04-01]: First-launch seed via object(forKey:)==nil check seeds both League of Legends bundle IDs defensively
 - [Phase 04-02]: ExclusionSettingsTab registered in project.pbxproj manually — xcodebuild BUILD SUCCEEDED confirms correct wiring
 - [Phase 04-02]: Empty state shown only when search is non-empty and filteredApps is empty — avoids flash during NSMetadataQuery population
+- [Phase 05-01]: Single ModelContainer initialized in FlowSpeechApp.init() and shared with AppDelegate — no second container
+- [Phase 05-01]: WindowGroup scene (not NSHostingView) for companion window — required for @Query to work in Phase 6
+- [Phase 05-01]: NSWindowDelegate chaining: windowShouldClose returns false + orderOut + 0.1s setActivationPolicy(.accessory) delay
 
 ### Pending Todos
 
@@ -103,7 +108,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-29 - Completed quick task 260329-qww: Fix fn key detection in Chrome
-Last session: 2026-03-29T17:24:53Z
-Stopped at: Completed quick-260329-qww (Fix fn key detection in Chrome via NSEvent)
+Last activity: 2026-03-30
+Last session: 2026-03-30T09:31:19.403Z
+Stopped at: Completed 05-01 (Companion Shell Foundation)
 Resume file: None
