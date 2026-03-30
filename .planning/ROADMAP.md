@@ -100,8 +100,8 @@ Plans:
   4. SwiftData ModelContainer is initialized once in FlowSpeechApp.init() and shared with AppDelegate — no second container is ever created
 **Plans:** 2 plans
 Plans:
-- [ ] 05-01-PLAN.md — SwiftData models, ModelContainer, WindowGroup scene, NavigationSplitView sidebar with placeholder views
-- [ ] 05-02-PLAN.md — Dock icon toggle, window hide-on-close lifecycle, menu bar "Open Wave" item, dock-click reopen
+- [x] 05-01-PLAN.md — SwiftData models, ModelContainer, WindowGroup scene, NavigationSplitView sidebar with placeholder views
+- [x] 05-02-PLAN.md — Dock icon toggle, window hide-on-close lifecycle, menu bar "Open Wave" item, dock-click reopen
 
 ### Phase 6: History
 **Goal**: Every transcription is automatically saved and users can browse, copy, and delete their transcription history grouped by date with usage stats at a glance
