@@ -29,7 +29,7 @@ struct OnboardingView: View {
         OnboardingStep(
             icon: "keyboard",
             title: "Choose Your Hotkey",
-            description: "Select how you want to activate voice recording. We recommend holding Caps Lock for quick access.",
+            description: "Select how you want to activate voice recording. Hold the key to record, release to transcribe.",
             action: .hotkey
         ),
         OnboardingStep(
@@ -41,7 +41,7 @@ struct OnboardingView: View {
         OnboardingStep(
             icon: "checkmark.circle.fill",
             title: "You're All Set!",
-            description: "Hold your chosen hotkey to record, release to transcribe. It's that simple.",
+            description: "Hold your hotkey to record, release to transcribe. Click the menu bar icon and select \"Open Wave\" to manage your history and settings.",
             action: nil
         )
     ]
@@ -202,7 +202,7 @@ struct HotkeySetupView: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            ForEach(HotkeyOption.allCases.prefix(3)) { option in
+            ForEach(HotkeyOption.allCases) { option in
                 HotkeyOptionButton(
                     option: option,
                     isSelected: appState.selectedHotkey == option

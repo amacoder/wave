@@ -16,10 +16,9 @@ struct EmptyStateView: View {
         VStack(spacing: 16) {
             Image(systemName: symbol)
                 .font(.system(size: 48))
-                .foregroundStyle(DesignSystem.Colors.vibrantBlue)
+                .foregroundStyle(.secondary)
             Text(title)
                 .font(.title2.bold())
-                .foregroundStyle(DesignSystem.Colors.softBlueWhite)
             Text(message)
                 .font(.body)
                 .foregroundColor(.secondary)
@@ -27,6 +26,5 @@ struct EmptyStateView: View {
                 .frame(maxWidth: 280)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignSystem.Colors.deepNavy)
     }
 }

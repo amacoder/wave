@@ -7,6 +7,10 @@
 
 import SwiftUI
 
+extension Notification.Name {
+    static let navigateToSettings = Notification.Name("navigateToSettings")
+}
+
 struct CompanionWindowView: View {
     @State private var selectedItem: SidebarItem? = .home
 
@@ -23,6 +27,8 @@ struct CompanionWindowView: View {
                     DictionaryView()
                 case .snippets:
                     SnippetsView()
+                case .settings:
+                    CompanionSettingsView()
                 }
             }
         }
@@ -35,5 +41,30 @@ struct CompanionWindowView: View {
                 }
             }
         )
+        .onReceive(NotificationCenter.default.publisher(for: .navigateToSettings)) { _ in
+            selectedItem = .settings
+        }
+    }
+}
+
+// MARK: - Capture openWindow for AppDelegate
+
+struct CaptureOpenWindowModifier: ViewModifier {
+    let appDelegate: AppDelegate
+    @Environment(\.openWindow) private var openWindow
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                appDelegate.openCompanionWindow = {
+                    openWindow(id: "companion")
+                }
+            }
+    }
+}
+
+extension View {
+    func captureOpenWindow(appDelegate: AppDelegate) -> some View {
+        modifier(CaptureOpenWindowModifier(appDelegate: appDelegate))
     }
 }

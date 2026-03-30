@@ -18,6 +18,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var companionWindow: NSWindow?
     var originalWindowDelegate: NSWindowDelegate?
     var modelContainer: ModelContainer?
+    /// Called from SwiftUI to open the companion WindowGroup
+    var openCompanionWindow: (() -> Void)?
     
     let appState = AppState()
     let hotkeyManager = HotkeyManager()
@@ -74,6 +76,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
             showOnboarding()
         }
+
+        // Close any auto-opened SwiftUI WindowGroup windows (LSUIElement menu bar app)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            for window in NSApp.windows where window.title == "Wave" || window.identifier?.rawValue.contains("companion") == true {
+                if window !== self.settingsWindow && window !== self.recordingWindow {
+                    window.close()
+                }
+            }
+            NSApp.setActivationPolicy(.accessory)
+        }
     }
     
     // MARK: - Menu Bar Setup
@@ -91,7 +103,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Start Recording", action: #selector(toggleRecording), keyEquivalent: "r"))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openCompanionSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit Wave", action: #selector(quitApp), keyEquivalent: "q"))
         
@@ -452,11 +464,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func enableDockIcon() {
         NSApp.setActivationPolicy(.regular)
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func disableDockIcon() {
@@ -469,20 +477,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Companion Window
 
     @objc func openCompanion() {
+        NSApp.setActivationPolicy(.regular)
+        // If the companion window already exists, just bring it forward
         if let window = companionWindow {
             window.makeKeyAndOrderFront(nil)
-            enableDockIcon()
-        } else {
-            // First open: WindowGroup hasn't rendered yet.
-            // Activate the app — SwiftUI will present the WindowGroup because
-            // there are no visible windows (LSUIElement = true means no automatic open).
-            enableDockIcon()
+            NSApp.activate(ignoringOtherApps: true)
+            return
         }
+        // Otherwise ask SwiftUI to create a new one
+        openCompanionWindow?()
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         openCompanion()
-        return true
+        return false  // Prevent macOS from also auto-opening a WindowGroup window
+    }
+
+    @objc func openCompanionSettings() {
+        openCompanion()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NotificationCenter.default.post(name: .navigateToSettings, object: nil)
+        }
     }
 
     // MARK: - Settings
@@ -595,10 +611,10 @@ extension AppDelegate: NSWindowDelegate {
         guard sender === companionWindow else {
             return true
         }
-        // Hide instead of close — instant reopen
-        sender.orderOut(nil)
+        // Let SwiftUI close normally, disable dock icon
+        companionWindow = nil
         disableDockIcon()
-        return false
+        return true
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
@@ -610,6 +626,10 @@ extension AppDelegate: NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        if let window = notification.object as? NSWindow, window === companionWindow {
+            companionWindow = nil
+            disableDockIcon()
+        }
         originalWindowDelegate?.windowWillClose?(notification)
     }
 }

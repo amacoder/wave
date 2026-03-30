@@ -30,6 +30,9 @@ struct FlowSpeechApp: App {
     var body: some Scene {
         WindowGroup(id: "companion") {
             CompanionWindowView()
+                .environmentObject(appDelegate.appState)
+                .environmentObject(appDelegate.exclusionService)
+                .captureOpenWindow(appDelegate: appDelegate)
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 800, height: 600)

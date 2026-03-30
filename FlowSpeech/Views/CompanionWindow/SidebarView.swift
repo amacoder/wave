@@ -8,14 +8,18 @@
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case home, dictionary, snippets
-    var id: String { rawValue }
+    case home, dictionary, snippets, settings
+    var id: Self { self }
+
+    /// Items shown in the main list (not pinned)
+    static var mainItems: [SidebarItem] { [.home, .dictionary, .snippets] }
 
     var title: String {
         switch self {
         case .home: return "Home"
         case .dictionary: return "Dictionary"
         case .snippets: return "Snippets"
+        case .settings: return "Settings"
         }
     }
 
@@ -23,7 +27,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "waveform"
         case .dictionary: return "text.book.closed"
-        case .snippets: return "sparkles.text.fill"
+        case .snippets: return "sparkles"
+        case .settings: return "gearshape"
         }
     }
 }
@@ -32,24 +37,24 @@ struct SidebarView: View {
     @Binding var selection: SidebarItem?
 
     var body: some View {
-        VStack(spacing: 0) {
-            List(SidebarItem.allCases, selection: $selection) { item in
+        List(selection: $selection) {
+            ForEach(SidebarItem.mainItems) { item in
                 Label(item.title, systemImage: item.icon)
+                    .tag(item)
             }
-            .listStyle(.sidebar)
-
-            Divider()
-                .padding(.horizontal, 12)
-
-            Button(action: {
-                (NSApp.delegate as? AppDelegate)?.openSettings()
-            }) {
-                Label("Settings", systemImage: "gearshape")
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
+        }
+        .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                Divider()
+                List(selection: $selection) {
+                    Label("Settings", systemImage: "gearshape")
+                        .tag(SidebarItem.settings)
+                }
+                .listStyle(.sidebar)
+                .frame(height: 36)
+                .scrollDisabled(true)
             }
-            .buttonStyle(.plain)
-            .padding(.bottom, 8)
         }
     }
 }

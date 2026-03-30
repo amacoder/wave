@@ -33,6 +33,7 @@
 		A10000010000000000000026 /* SnippetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000026 /* SnippetsView.swift */; };
 		A10000010000000000000027 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000027 /* EmptyStateView.swift */; };
 		A10000010000000000000028 /* WindowAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000028 /* WindowAccessor.swift */; };
+		A10000010000000000000029 /* CompanionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000029 /* CompanionSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +65,7 @@
 		A10000020000000000000026 /* SnippetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetsView.swift; sourceTree = "<group>"; };
 		A10000020000000000000027 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		A10000020000000000000028 /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
+		A10000020000000000000029 /* CompanionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionSettingsView.swift; sourceTree = "<group>"; };
 		A10000030000000000000001 /* FlowSpeech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlowSpeech.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -148,6 +150,7 @@
 				A10000020000000000000024 /* HomeView.swift */,
 				A10000020000000000000025 /* DictionaryView.swift */,
 				A10000020000000000000026 /* SnippetsView.swift */,
+				A10000020000000000000029 /* CompanionSettingsView.swift */,
 			);
 			path = CompanionWindow;
 			sourceTree = "<group>";
@@ -271,6 +274,7 @@
 				A10000010000000000000026 /* SnippetsView.swift in Sources */,
 				A10000010000000000000027 /* EmptyStateView.swift in Sources */,
 				A10000010000000000000028 /* WindowAccessor.swift in Sources */,
+				A10000010000000000000029 /* CompanionSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
