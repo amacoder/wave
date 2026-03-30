@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Companion App
-status: verifying
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-30T13:44:26.417Z"
+status: executing
+stopped_at: Completed 07-02-PLAN.md (DictionaryView CRUD)
+last_updated: "2026-03-30T14:29:34.309Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 14
+  completed_plans: 11
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hold a key, speak, and have accurate text appear where you need it — zero friction dictation.
-**Current focus:** Phase 06 — history
+**Current focus:** Phase 07 — dictionary-snippets
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 07 (dictionary-snippets) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-03-30
 
 Progress: [░░░░░░░░░░] 0% (v1.2 phases)
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 | Phase 05-companion-shell P02 | 6 | 1 tasks | 1 files |
 | Phase 06-history P01 | 8 | 1 tasks | 1 files |
 | Phase 06-history P02 | 12 | 1 tasks | 1 files |
+| Phase 07-dictionary-snippets P02 | 5 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 06-01]: Source app captured at startRecording() start, not transcription end, so correct app stored even if user switches focus during Whisper API call
 - [Phase 06-02]: FetchDescriptor fetchLimit must be set as a property after init on macOS SDK 26.4, not as constructor argument
 - [Phase 06-02]: Undo delete pattern: hold pendingUndo in-memory, delete from context, start 3-second Task, re-insert on undo tap
+- [Phase 07-02]: EditingDictionaryState as value-type struct with Identifiable conformance — enables .sheet(item:) pattern with SwiftUI copy semantics for safe field binding
+- [Phase 07-02]: PromptCharCountBar always visible below divider — visible even when list is empty, giving users baseline context before adding any terms
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-30
-Last session: 2026-03-30T13:44:26.411Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-dictionary-snippets/07-CONTEXT.md
+Last session: 2026-03-30T14:29:34.301Z
+Stopped at: Completed 07-02-PLAN.md (DictionaryView CRUD)
+Resume file: None
