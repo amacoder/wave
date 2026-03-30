@@ -44,10 +44,10 @@ Requirements for Companion App milestone.
 ### History
 
 - [x] **HIST-01**: Every completed transcription is automatically saved with timestamp, raw text, cleaned text, duration, word count, and focused app name
-- [ ] **HIST-02**: User can view transcription history grouped by date (Today, Yesterday, This Week, Older)
-- [ ] **HIST-03**: User can see stats bar showing streak days, total word count, and average WPM
-- [ ] **HIST-04**: User can copy a transcription entry's text to clipboard
-- [ ] **HIST-05**: User can delete individual transcription entries
+- [x] **HIST-02**: User can view transcription history grouped by date (Today, Yesterday, This Week, Older)
+- [x] **HIST-03**: User can see stats bar showing streak days, total word count, and average WPM
+- [x] **HIST-04**: User can copy a transcription entry's text to clipboard
+- [x] **HIST-05**: User can delete individual transcription entries
 
 ### Dictionary
 
@@ -111,10 +111,10 @@ Requirements for Companion App milestone.
 | SHELL-02 | Phase 5 | Complete |
 | SHELL-03 | Phase 5 | Pending |
 | HIST-01 | Phase 6 | Complete |
-| HIST-02 | Phase 6 | Pending |
-| HIST-03 | Phase 6 | Pending |
-| HIST-04 | Phase 6 | Pending |
-| HIST-05 | Phase 6 | Pending |
+| HIST-02 | Phase 6 | Complete |
+| HIST-03 | Phase 6 | Complete |
+| HIST-04 | Phase 6 | Complete |
+| HIST-05 | Phase 6 | Complete |
 | DICT-01 | Phase 7 | Pending |
 | DICT-02 | Phase 7 | Pending |
 | DICT-03 | Phase 7 | Pending |

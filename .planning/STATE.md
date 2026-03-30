@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Companion App
-status: executing
-stopped_at: Completed 06-01-PLAN.md (Transcription save hook)
-last_updated: "2026-03-30T13:16:45.185Z"
+status: verifying
+stopped_at: Completed 06-02-PLAN.md (HomeView history UI)
+last_updated: "2026-03-30T13:20:38.957Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 Phase: 06 (history) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-30
 
 Progress: [░░░░░░░░░░] 0% (v1.2 phases)
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 *Updated after each plan completion*
 | Phase 05-companion-shell P02 | 6 | 1 tasks | 1 files |
 | Phase 06-history P01 | 8 | 1 tasks | 1 files |
+| Phase 06-history P02 | 12 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 06-01]: Background ModelContext(container) used per save to avoid cross-thread SwiftData access
 - [Phase 06-01]: cleanupOldEntries() deferred via DispatchQueue.main.async because FlowSpeechApp.init() sets modelContainer after applicationDidFinishLaunching
 - [Phase 06-01]: Source app captured at startRecording() start, not transcription end, so correct app stored even if user switches focus during Whisper API call
+- [Phase 06-02]: FetchDescriptor fetchLimit must be set as a property after init on macOS SDK 26.4, not as constructor argument
+- [Phase 06-02]: Undo delete pattern: hold pendingUndo in-memory, delete from context, start 3-second Task, re-insert on undo tap
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-30
-Last session: 2026-03-30T13:16:45.181Z
-Stopped at: Completed 06-01-PLAN.md (Transcription save hook)
+Last session: 2026-03-30T13:20:38.951Z
+Stopped at: Completed 06-02-PLAN.md (HomeView history UI)
 Resume file: None
