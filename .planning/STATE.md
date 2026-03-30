@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Companion App
 status: executing
-stopped_at: Completed 07-01-PLAN.md (Dictionary & Snippet Services)
-last_updated: "2026-03-30T14:30:31.358Z"
+stopped_at: Completed 07-03-PLAN.md (SnippetsView CRUD)
+last_updated: "2026-03-30T14:31:00.000Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 14
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -54,8 +54,12 @@ Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 | Phase 05-companion-shell P02 | 6 | 1 tasks | 1 files |
 | Phase 06-history P01 | 8 | 1 tasks | 1 files |
 | Phase 06-history P02 | 12 | 1 tasks | 1 files |
+<<<<<<< HEAD
 | Phase 07-dictionary-snippets P02 | 5 | 1 tasks | 1 files |
 | Phase 07-dictionary-snippets P01 | 2 | 2 tasks | 3 files |
+=======
+| Phase 07-dictionary-snippets P03 | 2 | 1 tasks | 1 files |
+>>>>>>> a485b1f (docs(07-03): complete SnippetsView CRUD plan)
 
 ## Accumulated Context
 
@@ -80,11 +84,16 @@ Recent decisions affecting current work:
 - [Phase 06-01]: Source app captured at startRecording() start, not transcription end, so correct app stored even if user switches focus during Whisper API call
 - [Phase 06-02]: FetchDescriptor fetchLimit must be set as a property after init on macOS SDK 26.4, not as constructor argument
 - [Phase 06-02]: Undo delete pattern: hold pendingUndo in-memory, delete from context, start 3-second Task, re-insert on undo tap
+<<<<<<< HEAD
 - [Phase 07-02]: EditingDictionaryState as value-type struct with Identifiable conformance — enables .sheet(item:) pattern with SwiftUI copy semantics for safe field binding
 - [Phase 07-02]: PromptCharCountBar always visible below divider — visible even when list is empty, giving users baseline context before adding any terms
 - [Phase 07-01]: Case-insensitive TextReplacer using NSRegularExpression — Whisper output capitalisation is non-deterministic (D-02)
 - [Phase 07-01]: Sentence-format Whisper prompt 'In this transcript: ...' — outperforms comma-separated lists (D-05)
 - [Phase 07-01]: Newest-first sort for buildPrompt truncation prioritisation (D-06)
+=======
+- [Phase 07-03]: EditingSnippetState is a plain struct (not @Model) as sheet binding to avoid SwiftData mutation race during sheet dismissal
+- [Phase 07-03]: TextEditor placeholder via ZStack overlay allowsHitTesting(false) — standard macOS pattern since TextEditor lacks native placeholder API
+>>>>>>> a485b1f (docs(07-03): complete SnippetsView CRUD plan)
 
 ### Pending Todos
 
@@ -100,6 +109,11 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-30
+<<<<<<< HEAD
 Last session: 2026-03-30T14:30:31.354Z
 Stopped at: Completed 07-01-PLAN.md (Dictionary & Snippet Services)
+=======
+Last session: 2026-03-30T14:30:18.820Z
+Stopped at: Completed 07-03-PLAN.md (SnippetsView CRUD)
+>>>>>>> a485b1f (docs(07-03): complete SnippetsView CRUD plan)
 Resume file: None
