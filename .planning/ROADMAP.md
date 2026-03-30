@@ -129,7 +129,12 @@ Plans:
   4. User can create a snippet with a trigger phrase and expanded text, and saying the trigger phrase in any dictation automatically replaces it with the expanded text before the text is pasted
   5. Snippet expansion runs after GPT-4o-mini cleanup and before paste — the final pasted text contains expanded content, not raw triggers
   6. User can search, edit, and delete snippet entries from the Snippets tab
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 07-01-PLAN.md — DictionaryService + SnippetService with shared TextReplacer engine
+- [ ] 07-02-PLAN.md — DictionaryView full CRUD with search, edit sheet, and character count bar
+- [ ] 07-03-PLAN.md — SnippetsView full CRUD with search, edit sheet, and two-line row display
+- [ ] 07-04-PLAN.md — Pipeline wiring in AppDelegate (prompt injection + post-transcription expansion)
 
 ### Phase 8: Integration Polish
 **Goal**: Dictation pasting goes to the correct app even when the companion window is open, and the overlay and companion window do not interfere with each other's focus behavior
@@ -154,7 +159,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 4. App Exclusion | v1.1 | 2/2 | Complete | 2026-03-26 |
 | 5. Companion Shell | v1.2 | 2/2 | Complete | 2026-03-30 |
 | 6. History | v1.2 | 2/2 | Complete   | 2026-03-30 |
-| 7. Dictionary & Snippets | v1.2 | 0/TBD | Not started | - |
+| 7. Dictionary & Snippets | v1.2 | 0/4 | Not started | - |
 | 8. Integration Polish | v1.2 | 0/TBD | Not started | - |
 
 ---
