@@ -92,6 +92,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260326-p3m | Add GPT-4o-mini text cleanup post-processing | 2026-03-26 | c41a72a | [260326-p3m-add-gpt-4o-mini-text-cleanup-post-proces](./quick/260326-p3m-add-gpt-4o-mini-text-cleanup-post-proces/) |
+| 260329-qww | Fix fn key detection in Chrome via NSEvent | 2026-03-29 | b405f82 | [260329-qww-fix-fn-key-detection-in-chrome-by-using-](./quick/260329-qww-fix-fn-key-detection-in-chrome-by-using-/) |
 
 ### Blockers/Concerns
 
@@ -102,6 +103,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T17:09:22.754Z
-Stopped at: Completed quick-260326-p3m (Smart Cleanup post-processing)
+Last activity: 2026-03-29 - Completed quick task 260329-qww: Fix fn key detection in Chrome
+Last session: 2026-03-29T17:24:53Z
+Stopped at: Completed quick-260329-qww (Fix fn key detection in Chrome via NSEvent)
 Resume file: None

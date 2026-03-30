@@ -111,7 +111,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         hotkeyManager.start()
 
-        // NSEvent monitors as fallback for modifier-based hotkeys (caps lock, etc.)
+        // NSEvent monitors — primary handler for fn key (works in Chrome)
         flagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.handleFlagsChanged(event)
         }
