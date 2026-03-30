@@ -1,59 +1,56 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: UI Revamp & Polish
-status: Phase complete — ready for verification
+milestone: v1.2
+milestone_name: Companion App
+status: executing
 stopped_at: Completed 05-01 (Companion Shell Foundation)
 last_updated: "2026-03-30T09:31:19.408Z"
 last_activity: 2026-03-30
 progress:
-  total_phases: 4
+  total_phases: 8
   completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hold a key, speak, and have accurate text appear where you need it — zero friction dictation.
-**Current focus:** Phase 04 — app-exclusion
+**Current focus:** Phase 05 — companion-shell
 
 ## Current Position
 
-Phase: 04 (app-exclusion) — COMPLETE
-Plan: 2 of 2 (all plans complete)
+Phase: 05 (companion-shell) — EXECUTING
+Plan: 1 of 2 complete
+Status: Executing Phase 05
+Last activity: 2026-03-30 -- Plan 05-01 complete, executing Wave 2
+
+Progress: [░░░░░░░░░░] 0% (v1.2 phases)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
+- Total plans completed: 7 (v1.1) + 1 (v1.2)
 - Average duration: 7 min
-- Total execution time: 14 min
+- Total execution time: ~37 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1 | 4 min | 4 min |
+| 01-foundation | 2 | 8 min | 4 min |
 | 02-clipboard-persistence | 1 | 10 min | 10 min |
-
-**Recent Trend:**
-
-- Last 5 plans: 4 min, 10 min
-- Trend: —
+| 03-overlay-redesign | 1 | 12 min | 12 min |
+| 04-app-exclusion | 2 | 5 min | 2.5 min |
+| 05-companion-shell P01 | 4 | 2 tasks | 13 files |
 
 *Updated after each plan completion*
-| Phase 01-foundation P02 | 4 | 2 tasks | 6 files |
-| Phase 02-clipboard-persistence P01 | 10 | 2 tasks | 1 file |
-| Phase 03-overlay-redesign P01 | 12 | 2 tasks | 3 files |
-| Phase 04-app-exclusion P01 | 2 | 2 tasks | 3 files |
-| Phase 04-app-exclusion P02 | 3 | 2 tasks | 3 files |
-| Phase 05-companion-shell P01 | 4 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -62,28 +59,11 @@ Plan: 2 of 2 (all plans complete)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Blue palette over black/beige — user preference; deep navy + vibrant blue + soft blue-white
-- Wispr Flow pill design as reference — Flow Bar at bottom-center, spring transitions
-- Game exclusion via explicit bundle ID list as primary signal — geometry detection as opt-in secondary to avoid false positives in fullscreen Xcode/Terminal
-- Clipboard persistence on by default — remove 0.5s restore, keep transcription available via Cmd+V
-- [01-01] RecordingPhase.done as explicit transient state with 1.5s idle transition — UI success feedback without timers in views
-- [01-01] Computed shims isRecording/isTranscribing on AppState for backward-compatible view reads
-- [01-01] Separate updateMenuBarIconForHealth() from phase-driven icon — health override wins, restores on recovery
-- [Phase 01-02]: DesignSystem.Colors.accentGradient used where direction matches (.leading/.trailing); explicit colors for other gradient directions
-- [Phase 01-02]: Phase-gated animation pattern: onChange(of: appState.phase) + onAppear guard eliminates idle CPU from repeatForever loops
-- [Phase 01-02]: CircularWaveformView phase renamed to animationPhase to avoid shadowing appState.phase
-- [02-01] Remove clipboard restore entirely — transcription stays on clipboard after paste so Cmd+V re-pastes it (CLIP-01)
-- [02-01] org.nspasteboard.TransientType marker with empty Data() in same clearContents transaction — excludes dictation from clipboard manager history (CLIP-03)
-- [02-01] changeCountAfterWrite snapshot kept as dormant dead code with restore-guard comment — wirable if a restore path is ever re-introduced (CLIP-02)
-- [Phase 03-01]: setFrame outside nil guard so pill repositions/resizes on every showRecordingOverlay() call
-- [Phase 03-01]: hideRecordingOverlay() delayed 0.8s after appState.phase = .done to show done-state checkmark flash
-- [Phase 03-01]: Canvas flat vibrantBlue fill (not gradient) for waveform bars per spec
-- [Phase 03-01]: ZIndex per ZStack branch to prevent crossfade drawing-order artifacts on spring transitions
-- [Phase 04-01]: kCGWindowOwnerPID used for fullscreen detection to avoid macOS 26 beta regression FB18327911 affecting status-item attribution
-- [Phase 04-01]: autoSuppressFullscreen defaults to true — aligns with EXCL-02; developers can disable in Exclusion settings tab
-- [Phase 04-01]: First-launch seed via object(forKey:)==nil check seeds both League of Legends bundle IDs defensively
-- [Phase 04-02]: ExclusionSettingsTab registered in project.pbxproj manually — xcodebuild BUILD SUCCEEDED confirms correct wiring
-- [Phase 04-02]: Empty state shown only when search is non-empty and filteredApps is empty — avoids flash during NSMetadataQuery population
+- SwiftData over GRDB — modern Apple persistence, macOS 14+ acceptable (confirmed for v1.2)
+- Companion window must use WindowGroup (not NSWindow) — @Query silently fails in NSHostingView
+- setActivationPolicy: commit permanently after first companion open, never toggle mid-session
+- Snippet expansion runs after GPT-4o-mini cleanup, before TextInserter (pipeline order locked)
+- fetchLimit = 200 + 90-day retention — ship from day one, not retroactively
 - [Phase 05-01]: Single ModelContainer initialized in FlowSpeechApp.init() and shared with AppDelegate — no second container
 - [Phase 05-01]: WindowGroup scene (not NSHostingView) for companion window — required for @Query to work in Phase 6
 - [Phase 05-01]: NSWindowDelegate chaining: windowShouldClose returns false + orderOut + 0.1s setActivationPolicy(.accessory) delay
@@ -92,19 +72,12 @@ Recent decisions affecting current work:
 
 None yet.
 
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260326-p3m | Add GPT-4o-mini text cleanup post-processing | 2026-03-26 | c41a72a | [260326-p3m-add-gpt-4o-mini-text-cleanup-post-proces](./quick/260326-p3m-add-gpt-4o-mini-text-cleanup-post-proces/) |
-| 260329-qww | Fix fn key detection in Chrome via NSEvent | 2026-03-29 | b405f82 | [260329-qww-fix-fn-key-detection-in-chrome-by-using-](./quick/260329-qww-fix-fn-key-detection-in-chrome-by-using-/) |
-
 ### Blockers/Concerns
 
-- macOS minimum version unspecified — choice between macOS 13 (no PhaseAnimator) and macOS 14 affects Phase 3 animation implementation. Decide before Phase 1 begins.
-- CGWindowListCopyWindowInfo regression in macOS 26 (FB18327911) — may affect fullscreen detection in Phase 4. Needs validation on target OS.
-- Multi-monitor overlay positioning — Phase 3 uses NSScreen.main (simpler); active-window screen detection is more correct but more complex. Decide during Phase 3 planning.
-- League of Legends bundle ID needs verification — both com.riotgames.LeagueofLegends (game) and com.riotgames.LeagueofLegends.LeagueClientUx (client) should be in default exclusion list.
+- setActivationPolicy exact timing: 0.1s delay and applicationWillFinishLaunching vs applicationDidFinishLaunching may need hardware validation — spike in Phase 5
+- Snippet partial vs. whole-word matching: exact behavior (punctuation stripping, standalone triggers) must be decided before Phase 7 begins
+- @Query pagination UX for large histories: FetchDescriptor offset pattern for "load more" — decide at Phase 6 planning time
+- VersionedSchema forward planning: sketch anticipated v1.3 fields (sourceAppBundleID, audio path) during Phase 5 model work
 
 ## Session Continuity
 

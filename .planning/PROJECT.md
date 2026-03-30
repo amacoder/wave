@@ -8,16 +8,17 @@ A macOS menu bar speech-to-text app that lets you hold a hotkey (Fn by default),
 
 Hold a key, speak, and have accurate text appear where you need it — zero friction dictation that stays out of your way.
 
-## Current Milestone: v1.1 UI Revamp & Polish
+## Current Milestone: v1.2 Companion App
 
-**Goal:** Redesign the UI with a polished amber aesthetic, fix UX bugs, and add smart app exclusion and clipboard resilience.
+**Goal:** Transform Wave from a menu-bar-only utility into a full companion app with transcription history, custom vocabulary, and text expansion snippets.
 
 **Target features:**
-- UI overhaul with amber/yellow color palette
-- Recording overlay redesign with smooth animations
-- Game/fullscreen app exclusion (suppress hotkey in games)
-- Clipboard persistence (transcription always available via Cmd+V)
-- Animation polish across all state transitions
+- Windowed app with sidebar navigation and dock presence
+- Home: transcription history with date groupings, stats (streak, word count, WPM)
+- Per-entry actions: copy, delete, retry transcript
+- Dictionary: custom vocabulary/terms to improve transcription accuracy
+- Snippets: text expansion shortcuts (say trigger phrase → inserts expanded text)
+- SwiftData persistence (macOS 14+)
 
 ## Requirements
 
@@ -38,17 +39,21 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 
 ### Active
 
-- [ ] Redesign overlay and views with Glaido-inspired blue palette
-- [x] Fix buggy recording overlay appearance when holding Fn — Validated in Phase 03
-- [x] Suppress hotkey activation when games/fullscreen apps are in focus — Validated in Phase 04
-- [x] Keep transcription on clipboard after paste (clipboard persistence) — Validated in Phase 02
-- [x] Smooth state transition animations (idle -> recording -> transcribing -> done) — Validated in Phase 01
+- [ ] Windowed companion app with sidebar navigation and dock icon
+- [ ] Transcription history with date groupings and stats
+- [ ] Custom dictionary for vocabulary/term corrections
+- [ ] Snippets for text expansion shortcuts
+- [ ] Per-entry actions: copy, delete, retry transcript
 
 ### Out of Scope
 
 - On-device transcription (Whisper API is sufficient for now) — complexity too high
 - Notch integration — not all Macs have notch, defer to future
-- Multiple language auto-detection — single language hint is enough for v1.1
+- Multiple language auto-detection — single language hint is enough
+- Style/writing preferences — deferred to v1.3
+- Notes/Scratchpad — deferred to v1.3
+- Audio download/playback — deferred to v1.3
+- Team sharing (dictionary/snippets) — solo user for now
 
 ## Context
 
@@ -79,6 +84,8 @@ Hold a key, speak, and have accurate text appear where you need it — zero fric
 | Glaido as design reference | Best-in-class UX for push-to-talk dictation apps | — Pending |
 | Game exclusion via app detection | User plays League of Legends; accidental Fn triggers during gaming | Shipped Phase 04 |
 | Clipboard persistence (don't restore) | Transcription lost when no text field focused; clipboard restore removes it | Shipped Phase 02 |
+| SwiftData over GRDB/raw SQLite | Modern Apple persistence, tight SwiftUI integration, macOS 14+ acceptable | — Pending |
+| Companion app with dock presence | Evolve from menu-bar-only to windowed app matching Flow's UX pattern | — Pending |
 
 ---
-*Last updated: 2026-03-26 after Phase 04 (App Exclusion) completion — all milestone phases complete*
+*Last updated: 2026-03-30 after milestone v1.2 start*
