@@ -60,8 +60,8 @@ Requirements for Companion App milestone.
 ### Snippets
 
 - [x] **SNIP-01**: User can create text expansion snippets with trigger phrase and expanded text
-- [ ] **SNIP-02**: Trigger phrases in transcriptions are automatically replaced with expanded text (case-insensitive)
-- [ ] **SNIP-03**: Snippet expansion runs after GPT-4o-mini cleanup, before paste
+- [x] **SNIP-02**: Trigger phrases in transcriptions are automatically replaced with expanded text (case-insensitive)
+- [x] **SNIP-03**: Snippet expansion runs after GPT-4o-mini cleanup, before paste
 - [x] **SNIP-04**: User can search, edit, and delete snippet entries
 
 ## Future Requirements
@@ -121,8 +121,8 @@ Requirements for Companion App milestone.
 | DICT-04 | Phase 7 | Complete |
 | DICT-05 | Phase 7 | Complete |
 | SNIP-01 | Phase 7 | Complete |
-| SNIP-02 | Phase 7 | Pending |
-| SNIP-03 | Phase 7 | Pending |
+| SNIP-02 | Phase 7 | Complete |
+| SNIP-03 | Phase 7 | Complete |
 | SNIP-04 | Phase 7 | Complete |
 
 **Coverage:**
