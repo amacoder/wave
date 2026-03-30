@@ -87,6 +87,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Build simple menu
         let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Open Wave", action: #selector(openCompanion), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Start Recording", action: #selector(toggleRecording), keyEquivalent: "r"))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
@@ -446,6 +448,43 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    // MARK: - Dock Icon Toggle
+
+    func enableDockIcon() {
+        NSApp.setActivationPolicy(.regular)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    func disableDockIcon() {
+        // Delay to prevent focus-stealing flicker (RESEARCH.md Pitfall 3)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    // MARK: - Companion Window
+
+    @objc func openCompanion() {
+        if let window = companionWindow {
+            window.makeKeyAndOrderFront(nil)
+            enableDockIcon()
+        } else {
+            // First open: WindowGroup hasn't rendered yet.
+            // Activate the app — SwiftUI will present the WindowGroup because
+            // there are no visible windows (LSUIElement = true means no automatic open).
+            enableDockIcon()
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        openCompanion()
+        return true
+    }
+
     // MARK: - Settings
 
     @objc func openSettings() {
@@ -552,12 +591,13 @@ import AVFoundation
 
 extension AppDelegate: NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        // Hide companion window instead of destroying it
-        sender.orderOut(nil)
-        // Restore accessory policy with a delay to prevent focus-stealing flicker
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            NSApp.setActivationPolicy(.accessory)
+        // Only intercept the companion window — let other windows close normally
+        guard sender === companionWindow else {
+            return true
         }
+        // Hide instead of close — instant reopen
+        sender.orderOut(nil)
+        disableDockIcon()
         return false
     }
 
@@ -567,5 +607,9 @@ extension AppDelegate: NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         originalWindowDelegate?.windowDidResignKey?(notification)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        originalWindowDelegate?.windowWillClose?(notification)
     }
 }
