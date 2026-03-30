@@ -32,6 +32,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
     private var cancellables = Set<AnyCancellable>()
+
+    private var recordingStartTime: Date?
+    private var recordingSourceApp: String?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenuBar()
@@ -85,6 +88,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             NSApp.setActivationPolicy(.accessory)
+        }
+
+        // 90-day retention cleanup — deferred because modelContainer is set by FlowSpeechApp.init() after this method
+        DispatchQueue.main.async { [weak self] in
+            self?.cleanupOldEntries()
         }
     }
     
@@ -224,6 +232,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         appState.errorMessage = nil
         appState.audioLevels = Array(repeating: 0.0, count: 30)
 
+        // Capture recording metadata at start (source app may change during Whisper API call)
+        recordingStartTime = Date()
+        recordingSourceApp = NSWorkspace.shared.frontmostApplication?.localizedName
+
         // Update menu bar icon
         updateMenuBarIcon()
         
@@ -306,6 +318,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if appState.smartCleanup {
                 finalText = await cleanupService.cleanup(text: transcription, apiKey: apiKey)
             }
+
+            // Save transcription to SwiftData (D-01: always save, even if paste fails — D-02)
+            let wordCount = finalText.split(separator: " ").count
+            let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
+            let sourceApp = recordingSourceApp
+
+            if let container = modelContainer {
+                let bgContext = ModelContext(container)
+                let entry = TranscriptionEntry(
+                    rawText: transcription,
+                    cleanedText: finalText,
+                    durationSeconds: duration,
+                    wordCount: wordCount,
+                    sourceAppName: sourceApp
+                )
+                bgContext.insert(entry)
+                try? bgContext.save()
+            }
+
+            // Reset recording metadata
+            recordingStartTime = nil
+            recordingSourceApp = nil
 
             await MainActor.run {
                 appState.lastTranscription = finalText
@@ -583,6 +617,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func quitApp() {
         NSApplication.shared.terminate(nil)
+    }
+
+    // MARK: - Retention Cleanup
+
+    private func cleanupOldEntries() {
+        guard let container = modelContainer else { return }
+        Task {
+            let context = ModelContext(container)
+            let cutoff = Calendar.current.date(byAdding: .day, value: -90, to: Date())!
+            let predicate = #Predicate<TranscriptionEntry> { $0.timestamp < cutoff }
+            try? context.delete(model: TranscriptionEntry.self, where: predicate)
+            try? context.save()
+        }
     }
 
     // MARK: - Temp File Cleanup
