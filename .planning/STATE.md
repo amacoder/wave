@@ -4,12 +4,12 @@ milestone: v1.2
 milestone_name: Companion App
 status: executing
 stopped_at: Completed 07-dictionary-snippets-07-04-PLAN.md
-last_updated: "2026-03-30T14:36:14.434Z"
+last_updated: "2026-03-30T14:40:12.557Z"
 last_activity: 2026-03-30
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 8
+  completed_phases: 7
+  total_plans: 14
   completed_plans: 14
   percent: 0
 ---
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 07 (dictionary-snippets) — EXECUTING
-Plan: 4 of 4
+Phase: 8
+Plan: Not started
 Status: Ready to execute
 Last activity: 2026-03-30
 
@@ -82,7 +82,6 @@ Recent decisions affecting current work:
 - [Phase 06-01]: Source app captured at startRecording() start, not transcription end, so correct app stored even if user switches focus during Whisper API call
 - [Phase 06-02]: FetchDescriptor fetchLimit must be set as a property after init on macOS SDK 26.4, not as constructor argument
 - [Phase 06-02]: Undo delete pattern: hold pendingUndo in-memory, delete from context, start 3-second Task, re-insert on undo tap
-
 
 - [Phase 07-01]: Case-insensitive TextReplacer using NSRegularExpression — Whisper output capitalisation is non-deterministic (D-02)
 - [Phase 07-01]: Sentence-format Whisper prompt 'In this transcript: ...' — outperforms comma-separated lists (D-05)
