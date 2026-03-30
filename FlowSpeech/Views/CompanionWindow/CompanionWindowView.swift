@@ -19,16 +19,18 @@ struct CompanionWindowView: View {
             SidebarView(selection: $selectedItem)
                 .navigationSplitViewColumnWidth(180)
         } detail: {
-            Group {
-                switch selectedItem {
-                case .home, nil:
-                    HomeView()
-                case .dictionary:
-                    DictionaryView()
-                case .snippets:
-                    SnippetsView()
-                case .settings:
-                    CompanionSettingsView()
+            NavigationStack {
+                Group {
+                    switch selectedItem {
+                    case .home, nil:
+                        HomeView()
+                    case .dictionary:
+                        DictionaryView()
+                    case .snippets:
+                        SnippetsView()
+                    case .settings:
+                        CompanionSettingsView()
+                    }
                 }
             }
         }
