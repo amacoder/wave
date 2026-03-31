@@ -185,32 +185,13 @@ class HotkeyManager: ObservableObject {
         return nil
     }
     
-    private var fnKeyDown = false
-    private var previousFlags: UInt64 = 0
-
     private func handleFlagsChanged(event: CGEvent) -> Bool? {
-        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-        let flags = event.flags
-        let currentRaw = flags.rawValue
-
         switch currentHotkey {
         case .fnKey:
-            // Detect fn key (keyCode 63) by checking if the .maskSecondaryFn flag toggled
-            let fnNow = flags.contains(.maskSecondaryFn)
-            if keyCode == 63 || (fnNow != fnKeyDown) {
-                if fnNow && !fnKeyDown {
-                    fnKeyDown = true
-                    onHotkeyDown?()
-                } else if !fnNow && fnKeyDown {
-                    fnKeyDown = false
-                    onHotkeyUp?()
-                }
-            }
-            previousFlags = currentRaw
+            // Fn key handled by NSEvent monitor in AppDelegate (works in Chrome)
             return nil
 
         default:
-            previousFlags = currentRaw
             return nil
         }
     }
