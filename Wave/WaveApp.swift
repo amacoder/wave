@@ -1,5 +1,5 @@
 //
-//  FlowSpeechApp.swift
+//  WaveApp.swift
 //  Wave
 //
 //  Created by Amadeus
@@ -10,7 +10,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct FlowSpeechApp: App {
+struct WaveApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     let modelContainer: ModelContainer

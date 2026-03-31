@@ -92,7 +92,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.setActivationPolicy(.accessory)
         }
 
-        // 90-day retention cleanup — deferred because modelContainer is set by FlowSpeechApp.init() after this method
+        // 90-day retention cleanup — deferred because modelContainer is set by WaveApp.init() after this method
         DispatchQueue.main.async { [weak self] in
             self?.cleanupOldEntries()
         }

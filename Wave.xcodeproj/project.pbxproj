@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000010000000000000001 /* FlowSpeechApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000001 /* FlowSpeechApp.swift */; };
+		A10000010000000000000001 /* WaveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000001 /* WaveApp.swift */; };
 		A10000010000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000002 /* AppDelegate.swift */; };
 		A10000010000000000000003 /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000003 /* AudioRecorder.swift */; };
 		A10000010000000000000004 /* WhisperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000004 /* WhisperService.swift */; };
@@ -39,7 +39,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A10000020000000000000001 /* FlowSpeechApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowSpeechApp.swift; sourceTree = "<group>"; };
+		A10000020000000000000001 /* WaveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveApp.swift; sourceTree = "<group>"; };
 		A10000020000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000020000000000000003 /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
 		A10000020000000000000004 /* WhisperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperService.swift; sourceTree = "<group>"; };
@@ -51,7 +51,7 @@
 		A10000020000000000000010 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		A10000020000000000000011 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		A10000020000000000000012 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A10000020000000000000013 /* FlowSpeech.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlowSpeech.entitlements; sourceTree = "<group>"; };
+		A10000020000000000000013 /* Wave.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Wave.entitlements; sourceTree = "<group>"; };
 		A10000020000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10000020000000000000015 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		A10000020000000000000016 /* AppExclusionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppExclusionService.swift; sourceTree = "<group>"; };
@@ -70,7 +70,7 @@
 		A10000020000000000000029 /* CompanionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionSettingsView.swift; sourceTree = "<group>"; };
 		A10000020000000000000030 /* SnippetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetService.swift; sourceTree = "<group>"; };
 		A10000020000000000000031 /* DictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
-		A10000030000000000000001 /* FlowSpeech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlowSpeech.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000030000000000000001 /* Wave.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wave.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,25 +87,25 @@
 		A10000050000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				A10000050000000000000002 /* FlowSpeech */,
+				A10000050000000000000002 /* Wave */,
 				A10000050000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A10000050000000000000002 /* FlowSpeech */ = {
+		A10000050000000000000002 /* Wave */ = {
 			isa = PBXGroup;
 			children = (
-				A10000020000000000000001 /* FlowSpeechApp.swift */,
+				A10000020000000000000001 /* WaveApp.swift */,
 				A10000020000000000000002 /* AppDelegate.swift */,
 				A10000020000000000000015 /* DesignSystem.swift */,
 				A10000050000000000000003 /* Services */,
 				A10000050000000000000007 /* Models */,
 				A10000050000000000000004 /* Views */,
 				A10000050000000000000005 /* Resources */,
-				A10000020000000000000013 /* FlowSpeech.entitlements */,
+				A10000020000000000000013 /* Wave.entitlements */,
 				A10000020000000000000014 /* Info.plist */,
 			);
-			path = FlowSpeech;
+			path = Wave;
 			sourceTree = "<group>";
 		};
 		A10000050000000000000003 /* Services */ = {
@@ -181,7 +181,7 @@
 		A10000050000000000000006 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A10000030000000000000001 /* FlowSpeech.app */,
+				A10000030000000000000001 /* Wave.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -189,9 +189,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A10000060000000000000001 /* FlowSpeech */ = {
+		A10000060000000000000001 /* Wave */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10000080000000000000001 /* Build configuration list for PBXNativeTarget "FlowSpeech" */;
+			buildConfigurationList = A10000080000000000000001 /* Build configuration list for PBXNativeTarget "Wave" */;
 			buildPhases = (
 				A10000070000000000000001 /* Sources */,
 				A10000040000000000000001 /* Frameworks */,
@@ -201,9 +201,9 @@
 			);
 			dependencies = (
 			);
-			name = FlowSpeech;
-			productName = FlowSpeech;
-			productReference = A10000030000000000000001 /* FlowSpeech.app */;
+			name = Wave;
+			productName = Wave;
+			productReference = A10000030000000000000001 /* Wave.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -221,7 +221,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A10000080000000000000002 /* Build configuration list for PBXProject "FlowSpeech" */;
+			buildConfigurationList = A10000080000000000000002 /* Build configuration list for PBXProject "Wave" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -234,7 +234,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10000060000000000000001 /* FlowSpeech */,
+				A10000060000000000000001 /* Wave */,
 			);
 		};
 /* End PBXProject section */
@@ -255,7 +255,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000010000000000000001 /* FlowSpeechApp.swift in Sources */,
+				A10000010000000000000001 /* WaveApp.swift in Sources */,
 				A10000010000000000000002 /* AppDelegate.swift in Sources */,
 				A10000010000000000000013 /* DesignSystem.swift in Sources */,
 				A10000010000000000000003 /* AudioRecorder.swift in Sources */,
@@ -410,14 +410,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = FlowSpeech/FlowSpeech.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Wave/Wave.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 479DN3M784;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = FlowSpeech/Info.plist;
+				INFOPLIST_FILE = Wave/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Flow Speech";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -441,14 +441,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = FlowSpeech/FlowSpeech.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Wave/Wave.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 479DN3M784;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = FlowSpeech/Info.plist;
+				INFOPLIST_FILE = Wave/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Flow Speech";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -470,7 +470,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10000080000000000000001 /* Build configuration list for PBXNativeTarget "FlowSpeech" */ = {
+		A10000080000000000000001 /* Build configuration list for PBXNativeTarget "Wave" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000000A000000000000003 /* Debug */,
@@ -479,7 +479,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10000080000000000000002 /* Build configuration list for PBXProject "FlowSpeech" */ = {
+		A10000080000000000000002 /* Build configuration list for PBXProject "Wave" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000000A000000000000001 /* Debug */,

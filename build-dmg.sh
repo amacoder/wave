@@ -4,9 +4,8 @@ set -euo pipefail
 # Build Wave.app and package it into a .dmg for drag-and-drop installation
 # Usage: ./build-dmg.sh
 
-# The Xcode project/scheme is still named FlowSpeech (folder rename pending)
-XCODE_PROJECT="FlowSpeech"
-SCHEME="FlowSpeech"
+XCODE_PROJECT="Wave"
+SCHEME="Wave"
 DISPLAY_NAME="Wave"
 BUILD_DIR="$(pwd)/build"
 DMG_NAME="${DISPLAY_NAME}.dmg"
@@ -25,7 +24,7 @@ xcodebuild -project "${XCODE_PROJECT}.xcodeproj" \
     CODE_SIGN_IDENTITY="-" \
     2>&1 | tail -20
 
-# Find the built .app in DerivedData (may still be named FlowSpeech.app)
+# Find the built .app in DerivedData
 EXPORTED_APP=$(find "${BUILD_DIR}/DerivedData" -name "*.app" -type d | head -1)
 
 if [ -z "${EXPORTED_APP}" ] || [ ! -d "${EXPORTED_APP}" ]; then

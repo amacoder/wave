@@ -117,3 +117,18 @@ None - no external service configuration required.
 ---
 *Phase: 06-history*
 *Completed: 2026-03-30*
+
+## Self-Check: PASSED
+
+- HomeView.swift: FOUND (277 lines, exceeds 150-line minimum)
+- 06-02-SUMMARY.md: FOUND
+- Commit 7c5d94f: FOUND
+- Commit e99b84a: FOUND
+- @Query pattern: present
+- FetchDescriptor + fetchLimit: present
+- groupedEntries: present
+- NSPasteboard: present
+- modelContext.delete: present
+- modelContext.insert: present
+- regularMaterial: present
+- xcodebuild BUILD SUCCEEDED: confirmed
