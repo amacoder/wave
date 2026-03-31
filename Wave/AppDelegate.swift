@@ -159,9 +159,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var modifierKeyDown = false
     
     private func handleFlagsChanged(_ event: NSEvent) {
-        // Option+space and control+space are handled by HotkeyManager's CGEventTap
-        // Fn key is handled here via NSEvent (works in Chrome where CGEventTap misses fn release)
-        // NSEvent also handles caps lock variants
         switch appState.selectedHotkey {
         case .optionSpace, .controlSpace:
             return

@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import Carbon.HIToolbox
+
 import AppKit
 
 class HotkeyManager: ObservableObject {
@@ -64,7 +65,7 @@ class HotkeyManager: ObservableObject {
     
     func start() {
         guard eventTap == nil else { return }
-        
+
         let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue) |
                                      (1 << CGEventType.keyUp.rawValue) |
                                      (1 << CGEventType.flagsChanged.rawValue)
@@ -76,25 +77,22 @@ class HotkeyManager: ObservableObject {
             eventsOfInterest: eventMask,
             callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
                 guard let refcon = refcon else { return Unmanaged.passRetained(event) }
-                
+
                 let manager = Unmanaged<HotkeyManager>.fromOpaque(refcon).takeUnretainedValue()
-                
+
                 if let result = manager.handleEvent(type: type, event: event) {
                     return result ? nil : Unmanaged.passRetained(event)
                 }
-                
+
                 return Unmanaged.passRetained(event)
             },
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         )
         
         guard let eventTap = eventTap else {
-            #if DEBUG
-            print("Failed to create event tap - accessibility permission may be required")
-            #endif
             return
         }
-        
+
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
         CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: eventTap, enable: true)
@@ -187,15 +185,32 @@ class HotkeyManager: ObservableObject {
         return nil
     }
     
+    private var fnKeyDown = false
+    private var previousFlags: UInt64 = 0
+
     private func handleFlagsChanged(event: CGEvent) -> Bool? {
+        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
         let flags = event.flags
-        
+        let currentRaw = flags.rawValue
+
         switch currentHotkey {
         case .fnKey:
-            // Fn key handled by NSEvent monitor in AppDelegate (works in Chrome)
+            // Detect fn key (keyCode 63) by checking if the .maskSecondaryFn flag toggled
+            let fnNow = flags.contains(.maskSecondaryFn)
+            if keyCode == 63 || (fnNow != fnKeyDown) {
+                if fnNow && !fnKeyDown {
+                    fnKeyDown = true
+                    onHotkeyDown?()
+                } else if !fnNow && fnKeyDown {
+                    fnKeyDown = false
+                    onHotkeyUp?()
+                }
+            }
+            previousFlags = currentRaw
             return nil
-            
+
         default:
+            previousFlags = currentRaw
             return nil
         }
     }
