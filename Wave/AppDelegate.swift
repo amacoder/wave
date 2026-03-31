@@ -30,7 +30,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let exclusionService = AppExclusionService()
     let dictionaryService = DictionaryService.shared
     let snippetService = SnippetService.shared
-    
+    let hidFnKeyMonitor = HIDFnKeyMonitor()
+
     private var eventMonitor: Any?
     private var flagsMonitor: Any?
     private var cancellables = Set<AnyCancellable>()
@@ -139,7 +140,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         hotkeyManager.start()
 
-        // NSEvent monitors — primary handler for fn key (works in Chrome)
+        // NSEvent monitors — handles capsLock/doubleTapCapsLock; Fn also as fallback
         flagsMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.handleFlagsChanged(event)
         }
@@ -149,6 +150,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.handleFlagsChanged(event)
             return event
         }
+
+        // IOHIDManager — detects Fn/Globe at USB HID layer (works in Chrome)
+        hidFnKeyMonitor.start(
+            onFnDown: { [weak self] in
+                guard let self = self, self.appState.selectedHotkey == .fnKey else { return }
+                guard !self.modifierKeyDown else { return }
+                self.modifierKeyDown = true
+                #if DEBUG
+                print("HID Fn pressed - starting recording")
+                #endif
+                self.startRecording()
+            },
+            onFnUp: { [weak self] in
+                guard let self = self, self.appState.selectedHotkey == .fnKey else { return }
+                guard self.modifierKeyDown else { return }
+                self.modifierKeyDown = false
+                #if DEBUG
+                print("HID Fn released - stopping recording")
+                #endif
+                self.stopRecordingAndTranscribe()
+            }
+        )
 
         // Monitor for escape to cancel recording
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in

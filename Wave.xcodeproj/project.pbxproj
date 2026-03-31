@@ -36,6 +36,7 @@
 		A10000010000000000000029 /* CompanionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000029 /* CompanionSettingsView.swift */; };
 		A10000010000000000000030 /* SnippetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000030 /* SnippetService.swift */; };
 		A10000010000000000000031 /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000031 /* DictionaryService.swift */; };
+		A10000010000000000000032 /* HIDFnKeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000020000000000000032 /* HIDFnKeyMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +71,7 @@
 		A10000020000000000000029 /* CompanionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionSettingsView.swift; sourceTree = "<group>"; };
 		A10000020000000000000030 /* SnippetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetService.swift; sourceTree = "<group>"; };
 		A10000020000000000000031 /* DictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
+		A10000020000000000000032 /* HIDFnKeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDFnKeyMonitor.swift; sourceTree = "<group>"; };
 		A10000030000000000000001 /* Wave.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wave.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -120,6 +122,7 @@
 				A10000020000000000000018 /* TextCleanupService.swift */,
 				A10000020000000000000030 /* SnippetService.swift */,
 				A10000020000000000000031 /* DictionaryService.swift */,
+				A10000020000000000000032 /* HIDFnKeyMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -283,6 +286,7 @@
 				A10000010000000000000029 /* CompanionSettingsView.swift in Sources */,
 				A10000010000000000000030 /* SnippetService.swift in Sources */,
 				A10000010000000000000031 /* DictionaryService.swift in Sources */,
+				A10000010000000000000032 /* HIDFnKeyMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
