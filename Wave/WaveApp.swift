@@ -17,8 +17,15 @@ struct WaveApp: App {
 
     init() {
         do {
+            // Use a fixed path so data survives bundle ID changes and reinstalls
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let waveDir = appSupport.appendingPathComponent("Wave", isDirectory: true)
+            try FileManager.default.createDirectory(at: waveDir, withIntermediateDirectories: true)
+            let storeURL = waveDir.appendingPathComponent("Wave.store")
+            let config = ModelConfiguration(url: storeURL)
             modelContainer = try ModelContainer(
-                for: TranscriptionEntry.self, DictionaryWord.self, Snippet.self
+                for: TranscriptionEntry.self, DictionaryWord.self, Snippet.self,
+                configurations: config
             )
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
