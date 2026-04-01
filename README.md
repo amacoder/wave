@@ -209,10 +209,3 @@ System Settings → Keyboard → Modifier Keys → Set Caps Lock to "No Action"
 - Menu bar integration
 - 100+ language support
 
-## License
-
-MIT License - See [LICENSE](LICENSE) for details.
-
----
-
-**Made by [Amadeus](https://github.com/maewa-space)**
