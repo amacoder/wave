@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Xcode user data
+**/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# Build artifacts
+build/
+*.dmg
+*.app
+*.dSYM/
+*.dSYM.zip
+
+# Xcode generated project (regenerate with xcodegen)
+WaveiOS/*.xcodeproj
+WaveiOS/build/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code / GSD planning
+.claude/
+.planning/
